@@ -46,4 +46,8 @@ public class Match implements Serializable {
 
     @Column(name = "score_verified")
     private boolean scoreVerified;
+    
+    @Column(name = "match_order")
+    @ApiModelProperty(value = "Order in which this match should be played")
+    private int matchOrder;
 }
