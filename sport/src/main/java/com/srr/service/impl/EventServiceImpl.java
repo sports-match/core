@@ -161,7 +161,7 @@ public class EventServiceImpl implements EventService {
             }
             
             // Check if team is full
-            if (team.getTeamSize() == team.getTeamPlayers().size()) {
+            if (team.getTeamPlayers().size() >= team.getTeamSize()) {
                 throw new BadRequestException("Team is already full");
             }
             
@@ -173,49 +173,38 @@ public class EventServiceImpl implements EventService {
             teamPlayer.setPlayer(player);
             teamPlayer.setCheckedIn(false);
             teamPlayerRepository.save(teamPlayer);
+            
+            // Save team to ensure averageScore is updated
+            teamRepository.save(team);
         } else {
-            // Create new team for the player if needed or add as individual participant
+            // No teamId provided, so create a new team regardless of format
+            Team team = new Team();
+            team.setEvent(event);
+            
             if (event.getFormat() == Format.SINGLE) {
-                // For single format, create a "virtual" team with just one player
-                Team team = new Team();
-                team.setEvent(event);
                 team.setName("Player " + joinEventDto.getPlayerId());
                 team.setTeamSize(1);
-                Team savedTeam = teamRepository.save(team);
-                
-                // Add player to the team
-                TeamPlayer teamPlayer = new TeamPlayer();
-                teamPlayer.setTeam(savedTeam);
-                Player player = new Player();
-                player.setId(joinEventDto.getPlayerId());
-                teamPlayer.setPlayer(player);
-                teamPlayer.setCheckedIn(false);
-                teamPlayerRepository.save(teamPlayer);
-            } else if (event.getFormat() == Format.DOUBLE || event.getFormat() == Format.TEAM) {
-                // For doubles/team format, create a new team
-                Team team = new Team();
-                team.setEvent(event);
+            } else if (event.getFormat() == Format.DOUBLE) {
                 team.setName("New Team");
-                
-                // Set team size based on format
-                if (event.getFormat() == Format.DOUBLE) {
-                    team.setTeamSize(2);
-                } else {
-                    // Default team size of 4 for TEAM format, can be adjusted as needed
-                    team.setTeamSize(4);
-                }
-                
-                Team savedTeam = teamRepository.save(team);
-                
-                // Add player as the first member of the team
-                TeamPlayer teamPlayer = new TeamPlayer();
-                teamPlayer.setTeam(savedTeam);
-                Player player = new Player();
-                player.setId(joinEventDto.getPlayerId());
-                teamPlayer.setPlayer(player);
-                teamPlayer.setCheckedIn(false);
-                teamPlayerRepository.save(teamPlayer);
+                team.setTeamSize(2);
+            } else {
+                team.setName("New Team");
+                team.setTeamSize(4); // Default size for TEAM format
             }
+            
+            Team savedTeam = teamRepository.save(team);
+            
+            // Add player as the first member of the new team
+            TeamPlayer teamPlayer = new TeamPlayer();
+            teamPlayer.setTeam(savedTeam);
+            Player player = new Player();
+            player.setId(joinEventDto.getPlayerId());
+            teamPlayer.setPlayer(player);
+            teamPlayer.setCheckedIn(false);
+            teamPlayerRepository.save(teamPlayer);
+            
+            // Save team again to ensure averageScore is updated
+            teamRepository.save(savedTeam);
         }
         
         // Update participant count if not joining waitlist
