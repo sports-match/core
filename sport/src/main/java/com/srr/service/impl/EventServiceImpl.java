@@ -173,6 +173,9 @@ public class EventServiceImpl implements EventService {
             teamPlayer.setPlayer(player);
             teamPlayer.setCheckedIn(false);
             teamPlayerRepository.save(teamPlayer);
+            
+            // Save team to ensure averageScore is updated
+            teamRepository.save(team);
         } else {
             // Create new team for the player if needed or add as individual participant
             if (event.getFormat() == Format.SINGLE) {
@@ -191,6 +194,9 @@ public class EventServiceImpl implements EventService {
                 teamPlayer.setPlayer(player);
                 teamPlayer.setCheckedIn(false);
                 teamPlayerRepository.save(teamPlayer);
+                
+                // Save team again to ensure averageScore is updated
+                teamRepository.save(savedTeam);
             } else if (event.getFormat() == Format.DOUBLE || event.getFormat() == Format.TEAM) {
                 // For doubles/team format, create a new team
                 Team team = new Team();
@@ -215,6 +221,9 @@ public class EventServiceImpl implements EventService {
                 teamPlayer.setPlayer(player);
                 teamPlayer.setCheckedIn(false);
                 teamPlayerRepository.save(teamPlayer);
+                
+                // Save team again to ensure averageScore is updated
+                teamRepository.save(savedTeam);
             }
         }
         
