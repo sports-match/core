@@ -39,12 +39,12 @@ public class MatchServiceImpl implements MatchService {
         Match match = findById(scoreUpdateDto.getMatchId());
         
         // Ensure the current user is a player in either Team A or Team B
-        String currentUsername = SecurityUtils.getCurrentUsername();
-        if (currentUsername == null || currentUsername.isEmpty()) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        if (currentUserId == null) {
             throw new BadRequestException("Not authenticated");
         }
         
-        List<TeamPlayer> teamPlayers = teamPlayerRepository.findByUsername(currentUsername);
+        List<TeamPlayer> teamPlayers = teamPlayerRepository.findByUserId(currentUserId);
         
         if (teamPlayers.isEmpty()) {
             throw new BadRequestException("No team assignments found for the current player");
@@ -117,13 +117,13 @@ public class MatchServiceImpl implements MatchService {
     @Override
     @Transactional(readOnly = true)
     public List<Match> findMatchesForCurrentUser() {
-        String currentUsername = SecurityUtils.getCurrentUsername();
-        if (currentUsername == null || currentUsername.isEmpty()) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        if (currentUserId == null) {
             throw new BadRequestException("Not authenticated");
         }
         
         // Find all teams the current user is part of
-        List<TeamPlayer> teamPlayers = teamPlayerRepository.findByUsername(currentUsername);
+        List<TeamPlayer> teamPlayers = teamPlayerRepository.findByUserId(currentUserId);
         
         if (teamPlayers.isEmpty()) {
             return new ArrayList<>();
