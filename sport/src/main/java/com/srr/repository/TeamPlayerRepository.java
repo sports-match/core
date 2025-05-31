@@ -35,4 +35,12 @@ public interface TeamPlayerRepository extends JpaRepository<TeamPlayer, Long>, J
     
     @Query("SELECT tp FROM TeamPlayer tp JOIN tp.team t JOIN t.event e WHERE e.id = :eventId")
     List<TeamPlayer> findByEventId(@Param("eventId") Long eventId);
+    
+    /**
+     * Find all team player entries for a specific player by username
+     * @param username Player's username
+     * @return List of team player entries
+     */
+    @Query("SELECT tp FROM TeamPlayer tp JOIN tp.player p WHERE p.username = :username")
+    List<TeamPlayer> findByUsername(@Param("username") String username);
 }
