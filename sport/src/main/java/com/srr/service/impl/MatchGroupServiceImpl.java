@@ -19,6 +19,7 @@ import com.srr.domain.Event;
 import com.srr.domain.MatchGroup;
 import com.srr.domain.Team;
 import com.srr.dto.MatchGroupGenerationDto;
+import com.srr.event.MatchGroupCreatedEvent;
 import com.srr.repository.EventRepository;
 import com.srr.repository.MatchGroupRepository;
 import com.srr.repository.TeamRepository;
@@ -26,6 +27,7 @@ import com.srr.service.MatchGroupService;
 import lombok.RequiredArgsConstructor;
 import me.zhengjie.exception.BadRequestException;
 import me.zhengjie.exception.EntityNotFoundException;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +48,7 @@ public class MatchGroupServiceImpl implements MatchGroupService {
     private final EventRepository eventRepository;
     private final TeamRepository teamRepository;
     private final MatchGroupRepository matchGroupRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -142,5 +145,8 @@ public class MatchGroupServiceImpl implements MatchGroupService {
             team.setMatchGroup(matchGroup);
             teamRepository.save(team);
         }
+        
+        // Publish an event to trigger match generation
+        eventPublisher.publishEvent(new MatchGroupCreatedEvent(this, matchGroup));
     }
 }
