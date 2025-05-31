@@ -4,23 +4,6 @@
 
 A front-end and back-end separated management system based on Spring Boot 2.7.18, Spring Boot JPA, JWT, Spring Security, Redis, and Vue.
 
-A MyBatis-Plus version has also been released:
-- [GitHub](https://github.com/elunez/eladmin-mp)
-- [Gitee](https://gitee.com/elunez/eladmin-mp)
-
-**Documentation:** [https://eladmin.vip](https://eladmin.vip)
-
-**Demo:** [https://eladmin.vip/demo](https://eladmin.vip/demo)
-
-**Demo Account:** `admin / 123456`
-
-## Source Code
-
-|        | Backend Source | Frontend Source |
-|--------|---------------|----------------|
-| GitHub | https://github.com/elunez/eladmin | https://github.com/elunez/eladmin-web |
-| Gitee  | https://gitee.com/elunez/eladmin  | https://gitee.com/elunez/eladmin-web  |
-
 ## Main Features
 
 - Uses the latest tech stack with rich community resources.
@@ -48,7 +31,6 @@ A MyBatis-Plus version has also been released:
 - Code Generation: High flexibility code generation for front-end and back-end, reducing repetitive work.
 - Email Tool: Send HTML format emails with rich text.
 - AWS Cloud Storage: Synchronize AWS cloud storage data to the system, no need to log in to AWS cloud to operate cloud data.
-- Alipay Payment: Integrate Alipay payment and provide a test account for self-testing.
 - Server Monitoring: Monitor server load status.
 - Operations Management: One-click deployment of your application.
 
@@ -94,19 +76,3 @@ The project uses a modular development approach, with the following structure:
     - local-storage Local storage tool
 - eladmin-generator System Code Generation Module
 ```
-
-## Special Thanks
-
-- Thanks to [PanJiaChen](https://github.com/PanJiaChen/vue-element-admin) for providing the front-end template.
-- Thanks to [Moxun](https://github.com/moxun1639) for providing the front-end Curd common components.
-- Thanks to [zhy6599](https://gitee.com/zhy6599) for providing the back-end operations management related functions.
-- Thanks to [j.yao.SUSE](https://github.com/everhopingandwaiting) for providing the anonymous API and Redis rate limiting functions.
-- Thanks to [d15801543974](https://github.com/d15801543974) for providing the annotation-based common query method.
-
-## Project Donation
-
-The project's development relies on your support, please buy the author a cup of coffee ☕ [Donate](https://eladmin.vip/pages/030101/)
-
-## Feedback and Discussion
-
-- QQ discussion group: 891137268, 947578238, 659622532
