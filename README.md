@@ -75,4 +75,57 @@ The project uses a modular development approach, with the following structure:
     - alipay Alipay payment tool
     - local-storage Local storage tool
 - eladmin-generator System Code Generation Module
-```
+
+## Running the Project
+
+### Development Environment
+
+1. **Prerequisites**:
+   - Java 17
+   - Maven 3.6+
+   - MySQL 5.7+
+   - Redis
+
+2. **Configure Development Properties**:
+   - Update database connection in `eladmin-system/src/main/resources/config/application-dev.yml`
+   - Configure Redis connection
+   - Set email properties if using the email verification feature
+
+3. **Run the Application**:
+   ```bash
+   # Using Maven Wrapper
+   ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+   
+   # Or using Maven directly
+   mvn spring-boot:run -Dspring-boot.run.profiles=dev
+   ```
+
+4. **Access the API**:
+   - The API will be available at: `http://localhost:8000`
+   - Swagger API documentation: `http://localhost:8000/swagger-ui/index.html`
+
+### Production Environment
+
+1. **Build the Project**:
+   ```bash
+   # Using Maven Wrapper
+   ./mvnw clean package -Pproduct -Dmaven.test.skip=true
+   
+   # Or using Maven directly
+   mvn clean package -Pproduct -Dmaven.test.skip=true
+   ```
+
+2. **Configure Production Properties**:
+   - Update database connection in `eladmin-system/src/main/resources/config/application-prod.yml`
+   - Configure Redis connection with secure password
+   - Set appropriate logging levels
+   - Enable CORS protection as needed
+
+3. **Deploy the Application**:
+   ```bash
+   java -jar eladmin-system/target/eladmin-system-2.7.jar --spring.profiles.active=prod
+   ```
+
+4. **Server Requirements**:
+   - Minimum: 1 Core CPU, 2GB RAM
+   - Recommended: 2+ Core CPU, 4GB+ RAM
