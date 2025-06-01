@@ -1,4 +1,4 @@
-# ELADMIN Backend Management System
+# Backend Management System
 
 ## Project Introduction
 
@@ -83,7 +83,7 @@ The project uses a modular development approach, with the following structure:
 1. **Prerequisites**:
    - Java 17
    - Maven 3.6+
-   - MySQL 5.7+
+   - MySQL 8.0+
    - Redis
 
 2. **Configure Development Properties**:
