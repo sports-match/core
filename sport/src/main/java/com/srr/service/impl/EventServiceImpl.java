@@ -108,7 +108,7 @@ public class EventServiceImpl implements EventService {
     @Transactional(rollbackFor = Exception.class)
     public EventDto updateStatus(Long id, EventStatus status) {
         Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(Event.class, "id", Long.valueOf(id)));
+                .orElseThrow(() -> new EntityNotFoundException(Event.class, "id", String.valueOf(id)));
 
         // Only update the status field
         event.setStatus(status);
@@ -125,7 +125,7 @@ public class EventServiceImpl implements EventService {
     public EventDto joinEvent(JoinEventDto joinEventDto) {
         // Find the event
         Event event = eventRepository.findById(joinEventDto.getEventId())
-                .orElseThrow(() -> new EntityNotFoundException(Event.class, "id", Long.valueOf(joinEventDto.getEventId())));
+                .orElseThrow(() -> new EntityNotFoundException(Event.class, "id", String.valueOf(joinEventDto.getEventId())));
         
         // Check if event allows joining
         if (event.getStatus() != EventStatus.OPEN) {
@@ -148,7 +148,7 @@ public class EventServiceImpl implements EventService {
         if (joinEventDto.getTeamId() != null) {
             // Add player to existing team
             Team team = teamRepository.findById(joinEventDto.getTeamId())
-                    .orElseThrow(() -> new EntityNotFoundException(Team.class, "id", Long.valueOf(joinEventDto.getTeamId())));
+                    .orElseThrow(() -> new EntityNotFoundException(Team.class, "id", String.valueOf(joinEventDto.getTeamId())));
             
             // Verify team belongs to this event
             if (!team.getEvent().getId().equals(event.getId())) {
@@ -218,6 +218,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    @Transactional
     public void deleteAll(Long[] ids) {
         for (Long id : ids) {
             eventRepository.deleteById(id);

@@ -104,6 +104,7 @@ public class MatchGroupServiceImpl implements MatchGroupService {
     /**
      * Group teams based strictly on their score order
      */
+    @Transactional
     private List<List<Team>> createTeamGroups(List<Team> sortedTeams, int targetGroupCount) {
         int totalTeams = sortedTeams.size();
         
@@ -131,6 +132,7 @@ public class MatchGroupServiceImpl implements MatchGroupService {
     /**
      * Create a match group from a list of teams
      */
+    @Transactional
     private void createMatchGroup(Event event, List<Team> teams, String name, int groupTeamSize) {
         MatchGroup matchGroup = new MatchGroup();
         matchGroup.setName(name);

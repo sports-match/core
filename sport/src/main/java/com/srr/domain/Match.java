@@ -8,6 +8,7 @@ import javax.persistence.*;
 import java.io.Serializable;
 
 @Entity
+@Table(name = "match")
 @Setter
 @Getter
 public class Match implements Serializable {

@@ -12,11 +12,12 @@ import java.sql.Timestamp;
 @Getter
 @Setter
 @Entity
+@Table(name = "rating_history")
 public class RatingHistory implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "`id`")
+    @Column(name = "id")
     @ApiModelProperty(value = "id", hidden = true)
     private Long id;
 
@@ -24,15 +25,15 @@ public class RatingHistory implements Serializable {
     @JoinColumn(name = "player_id")
     private Player player;
 
-    @Column(name = "`rate_score`")
+    @Column(name = "rate_score")
     @ApiModelProperty(value = "Score")
     private Double rateScore;
 
-    @Column(name = "`changes`")
+    @Column(name = "changes")
     @ApiModelProperty(value = "Changes")
     private Double changes;
 
-    @Column(name = "`create_time`")
+    @Column(name = "create_time")
     @CreationTimestamp
     @ApiModelProperty(value = "Creation time", hidden = true)
     private Timestamp createTime;

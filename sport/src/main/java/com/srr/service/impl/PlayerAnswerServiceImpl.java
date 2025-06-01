@@ -168,6 +168,7 @@ public class PlayerAnswerServiceImpl implements PlayerAnswerService {
      * Calculate and update player score based on self-assessment answers
      * @param playerId The player ID
      */
+    @Transactional
     private void updatePlayerScore(Long playerId) {
         List<PlayerAnswer> answers = playerAnswerRepository.findByPlayerId(playerId);
         if (answers.isEmpty()) {

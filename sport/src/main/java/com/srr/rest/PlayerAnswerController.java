@@ -54,6 +54,7 @@ public class PlayerAnswerController {
     
     @ApiOperation("Submit player self-assessment answers")
     @PostMapping("/submit-assessment")
+    @PreAuthorize("@el.check('player-answer:create')")
     public ResponseEntity<List<PlayerAnswerDto>> submitSelfAssessment(
             @Validated @RequestBody List<PlayerAnswerDto> answers) {
         return new ResponseEntity<>(
@@ -63,6 +64,7 @@ public class PlayerAnswerController {
     
     @ApiOperation("Check if player has completed self-assessment")
     @GetMapping("/player/{playerId}/completed")
+    @PreAuthorize("@el.check('player-answer:list')")
     public ResponseEntity<Boolean> hasCompletedSelfAssessment(@PathVariable Long playerId) {
         return new ResponseEntity<>(
                 playerAnswerService.hasCompletedSelfAssessment(playerId), 

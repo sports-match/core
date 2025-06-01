@@ -36,12 +36,14 @@ public class QuestionController {
     
     @ApiOperation("Get all questions for self-assessment")
     @GetMapping("/self-assessment")
+    @PreAuthorize("@el.check('question:list')")
     public ResponseEntity<List<QuestionDto>> getAllForSelfAssessment() {
         return new ResponseEntity<>(questionService.getAllForSelfAssessment(), HttpStatus.OK);
     }
     
     @ApiOperation("Get questions by category")
     @GetMapping("/category/{category}")
+    @PreAuthorize("@el.check('question:list')")
     public ResponseEntity<List<QuestionDto>> getByCategory(@PathVariable String category) {
         return new ResponseEntity<>(questionService.getByCategory(category), HttpStatus.OK);
     }

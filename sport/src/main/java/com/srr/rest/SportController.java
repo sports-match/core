@@ -46,6 +46,7 @@ public class SportController {
 
     private final SportService sportService;
 
+    @ApiOperation("Health check endpoint")
     @AnonymousGetMapping(value = "/ping")
     public String ping() {
         return "pong";
