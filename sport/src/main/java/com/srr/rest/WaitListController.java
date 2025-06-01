@@ -47,13 +47,6 @@ public class WaitListController {
     private final WaitListService waitListService;
     private static final String ENTITY_NAME = "waitList";
 
-    @ApiOperation("Export wait list data")
-    @GetMapping(value = "/download")
-    @PreAuthorize("@el.check('waitList:list')")
-    public void exportWaitList(HttpServletResponse response, WaitListQueryCriteria criteria) throws IOException {
-        waitListService.download(waitListService.queryAll(criteria), response);
-    }
-
     @ApiOperation("Query wait list entries")
     @GetMapping
     @PreAuthorize("@el.check('waitList:list')")
@@ -73,6 +66,13 @@ public class WaitListController {
     @PreAuthorize("@el.check('waitList:list')")
     public ResponseEntity<List<WaitListDto>> queryWaitListByPlayer(@PathVariable Long playerId) {
         return new ResponseEntity<>(waitListService.findByPlayerId(playerId), HttpStatus.OK);
+    }
+
+    @ApiOperation("Get wait list entry by ID")
+    @GetMapping("/{id}")
+    @PreAuthorize("@el.check('waitList:list')")
+    public ResponseEntity<WaitListDto> getById(@PathVariable Long id) {
+        return new ResponseEntity<>(waitListService.findById(id), HttpStatus.OK);
     }
 
     @ApiOperation("Add to wait list")

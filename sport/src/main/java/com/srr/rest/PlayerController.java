@@ -45,18 +45,18 @@ public class PlayerController {
 
     private final PlayerService playerService;
 
-    @ApiOperation("Export Data")
-    @GetMapping(value = "/download")
-    @PreAuthorize("@el.check('player:list')")
-    public void exportPlayer(HttpServletResponse response, PlayerQueryCriteria criteria) throws IOException {
-        playerService.download(playerService.queryAll(criteria), response);
-    }
-
     @GetMapping
     @ApiOperation("Query sport")
     @PreAuthorize("@el.check('player:list')")
     public ResponseEntity<PageResult<PlayerDto>> queryPlayer(PlayerQueryCriteria criteria, Pageable pageable){
         return new ResponseEntity<>(playerService.queryAll(criteria,pageable),HttpStatus.OK);
+    }
+
+    @GetMapping("/{id}")
+    @ApiOperation("Get player by ID")
+    @PreAuthorize("@el.check('player:list')")
+    public ResponseEntity<PlayerDto> getById(@PathVariable Long id) {
+        return new ResponseEntity<>(playerService.findById(id), HttpStatus.OK);
     }
 
     @PostMapping

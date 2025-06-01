@@ -47,18 +47,18 @@ public class ClubController {
 
     private final ClubService clubService;
 
-    @ApiOperation("Export Data")
-    @GetMapping(value = "/download")
-    @PreAuthorize("@el.check('club:list')")
-    public void exportClub(HttpServletResponse response, ClubQueryCriteria criteria) throws IOException {
-        clubService.download(clubService.queryAll(criteria), response);
-    }
-
     @GetMapping
     @ApiOperation("Query clubs")
     @PreAuthorize("@el.check('club:list')")
     public ResponseEntity<PageResult<ClubDto>> queryClub(ClubQueryCriteria criteria, Pageable pageable){
         return new ResponseEntity<>(clubService.queryAll(criteria,pageable),HttpStatus.OK);
+    }
+
+    @GetMapping("/{id}")
+    @ApiOperation("Get club by ID")
+    @PreAuthorize("@el.check('club:list')")
+    public ResponseEntity<ClubDto> getById(@PathVariable Long id) {
+        return new ResponseEntity<>(clubService.findById(id), HttpStatus.OK);
     }
 
     @PostMapping

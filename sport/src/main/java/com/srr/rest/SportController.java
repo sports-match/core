@@ -52,18 +52,18 @@ public class SportController {
         return "pong";
     }
 
-    @ApiOperation("Export Data")
-    @GetMapping(value = "/download")
-    @PreAuthorize("@el.check('sport:list')")
-    public void exportSport(HttpServletResponse response, SportQueryCriteria criteria) throws IOException {
-        sportService.download(sportService.queryAll(criteria), response);
-    }
-
     @GetMapping
     @ApiOperation("Query sport")
     @PreAuthorize("@el.check('sport:list')")
     public ResponseEntity<PageResult<SportDto>> querySport(SportQueryCriteria criteria, Pageable pageable){
         return new ResponseEntity<>(sportService.queryAll(criteria,pageable),HttpStatus.OK);
+    }
+
+    @GetMapping("/{id}")
+    @ApiOperation("Get sport by ID")
+    @PreAuthorize("@el.check('sport:list')")
+    public ResponseEntity<SportDto> getById(@PathVariable Long id) {
+        return new ResponseEntity<>(sportService.findById(id), HttpStatus.OK);
     }
 
     @PostMapping

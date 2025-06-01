@@ -45,18 +45,18 @@ public class CourtController {
 
     private final CourtService courtService;
 
-    @ApiOperation("Export Data")
-    @GetMapping(value = "/download")
-    @PreAuthorize("@el.check('court:list')")
-    public void exportCourt(HttpServletResponse response, CourtQueryCriteria criteria) throws IOException {
-        courtService.download(courtService.queryAll(criteria), response);
-    }
-
     @GetMapping
     @ApiOperation("Query court")
     @PreAuthorize("@el.check('court:list')")
     public ResponseEntity<PageResult<CourtDto>> queryCourt(CourtQueryCriteria criteria, Pageable pageable){
         return new ResponseEntity<>(courtService.queryAll(criteria,pageable),HttpStatus.OK);
+    }
+
+    @GetMapping("/{id}")
+    @ApiOperation("Get court by ID")
+    @PreAuthorize("@el.check('court:list')")
+    public ResponseEntity<CourtDto> getById(@PathVariable Long id) {
+        return new ResponseEntity<>(courtService.findById(id), HttpStatus.OK);
     }
 
     @PostMapping
