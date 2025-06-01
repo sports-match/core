@@ -86,6 +86,7 @@ public class PlayerServiceImpl implements PlayerService {
     }
 
     @Override
+    @Transactional
     public void deleteAll(Long[] ids) {
         for (Long id : ids) {
             playerRepository.deleteById(id);

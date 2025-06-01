@@ -56,7 +56,7 @@ public class WaitListServiceImpl implements WaitListService {
     public WaitListDto create(WaitList resources) {
         // Validate event exists
         Event event = eventRepository.findById(resources.getEventId())
-                .orElseThrow(() -> new EntityNotFoundException(Event.class, "id", Long.valueOf(resources.getEventId())));
+                .orElseThrow(() -> new EntityNotFoundException(Event.class, "id", String.valueOf(resources.getEventId())));
         
         // Check if player is already in wait list
         if (waitListRepository.findByEventIdAndPlayerId(resources.getEventId(), resources.getPlayerId()) != null) {
@@ -73,7 +73,7 @@ public class WaitListServiceImpl implements WaitListService {
     @Transactional
     public void update(WaitList resources) {
         WaitList waitList = waitListRepository.findById(resources.getId())
-                .orElseThrow(() -> new EntityNotFoundException(WaitList.class, "id", Long.valueOf(resources.getId())));
+                .orElseThrow(() -> new EntityNotFoundException(WaitList.class, "id", String.valueOf(resources.getId())));
         waitList.copy(resources);
         waitListRepository.save(waitList);
     }
@@ -93,7 +93,7 @@ public class WaitListServiceImpl implements WaitListService {
     @Override
     public WaitListDto findById(Long id) {
         WaitList waitList = waitListRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(WaitList.class, "id", Long.valueOf(id)));
+                .orElseThrow(() -> new EntityNotFoundException(WaitList.class, "id", String.valueOf(id)));
         return mapToDto(waitList);
     }
 
@@ -101,7 +101,7 @@ public class WaitListServiceImpl implements WaitListService {
     public List<WaitListDto> findByEventId(Long eventId) {
         // Validate event exists
         if (!eventRepository.existsById(eventId)) {
-            throw new EntityNotFoundException(Event.class, "id", Long.valueOf(eventId));
+            throw new EntityNotFoundException(Event.class, "id", String.valueOf(eventId));
         }
         
         return waitListRepository.findByEventId(eventId).stream()
@@ -127,11 +127,11 @@ public class WaitListServiceImpl implements WaitListService {
     public boolean promoteToParticipant(Long waitListId) {
         // Find wait list entry
         WaitList waitList = waitListRepository.findById(waitListId)
-                .orElseThrow(() -> new EntityNotFoundException(WaitList.class, "id", Long.valueOf(waitListId)));
+                .orElseThrow(() -> new EntityNotFoundException(WaitList.class, "id", String.valueOf(waitListId)));
         
         // Find event
         Event event = eventRepository.findById(waitList.getEventId())
-                .orElseThrow(() -> new EntityNotFoundException(Event.class, "id", Long.valueOf(waitList.getEventId())));
+                .orElseThrow(() -> new EntityNotFoundException(Event.class, "id", String.valueOf(waitList.getEventId())));
         
         // Check if event is full
         if (event.getCurrentParticipants() >= event.getMaxParticipants()) {

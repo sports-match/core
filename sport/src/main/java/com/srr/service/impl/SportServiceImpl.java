@@ -86,6 +86,7 @@ public class SportServiceImpl implements SportService {
     }
 
     @Override
+    @Transactional
     public void deleteAll(Long[] ids) {
         for (Long id : ids) {
             sportRepository.deleteById(id);

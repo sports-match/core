@@ -86,6 +86,7 @@ public class ClubServiceImpl implements ClubService {
     }
 
     @Override
+    @Transactional
     public void deleteAll(Long[] ids) {
         for (Long id : ids) {
             clubRepository.deleteById(id);

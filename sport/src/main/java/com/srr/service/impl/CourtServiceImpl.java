@@ -86,6 +86,7 @@ public class CourtServiceImpl implements CourtService {
     }
 
     @Override
+    @Transactional
     public void deleteAll(Long[] ids) {
         for (Long id : ids) {
             courtRepository.deleteById(id);

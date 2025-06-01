@@ -24,6 +24,7 @@ import me.zhengjie.domain.EmailConfig;
 import me.zhengjie.service.EmailService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,6 +42,8 @@ public class EmailController {
     private final EmailService emailService;
 
     @GetMapping
+    @ApiOperation("Query email configuration")
+    @PreAuthorize("@el.check('email:list')")
     public ResponseEntity<EmailConfig> queryEmailConfig(){
         return new ResponseEntity<>(emailService.find(),HttpStatus.OK);
     }
@@ -48,6 +51,7 @@ public class EmailController {
     @Log("Configure email")
     @PutMapping
     @ApiOperation("Configure email")
+    @PreAuthorize("@el.check('email:config')")
     public ResponseEntity<Object> updateEmailConfig(@Validated @RequestBody EmailConfig emailConfig) throws Exception {
         emailService.config(emailConfig,emailService.find());
         return new ResponseEntity<>(HttpStatus.OK);
@@ -56,6 +60,7 @@ public class EmailController {
     @Log("Send email")
     @PostMapping
     @ApiOperation("Send email")
+    @PreAuthorize("@el.check('email:send')")
     public ResponseEntity<Object> sendEmail(@Validated @RequestBody EmailVo emailVo){
         emailService.send(emailVo,emailService.find());
         return new ResponseEntity<>(HttpStatus.OK);
