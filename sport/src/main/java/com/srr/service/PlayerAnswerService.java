@@ -1,6 +1,7 @@
 package com.srr.service;
 
 import com.srr.dto.PlayerAnswerDto;
+import me.zhengjie.utils.PageResult;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
@@ -17,9 +18,9 @@ public interface PlayerAnswerService {
      * Get all player answers
      * @param criteria Filter criteria
      * @param pageable Pagination information
-     * @return Map containing a list of PlayerAnswerDto objects and total count
+     * @return PageResult containing a list of PlayerAnswerDto objects and total count
      */
-    Map<String, Object> queryAll(PlayerAnswerDto criteria, Pageable pageable);
+    PageResult<PlayerAnswerDto> queryAll(PlayerAnswerDto criteria, Pageable pageable);
     
     /**
      * Get all answers for a player

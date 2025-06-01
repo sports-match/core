@@ -7,6 +7,7 @@ import com.srr.service.QuestionService;
 import lombok.RequiredArgsConstructor;
 import me.zhengjie.exception.BadRequestException;
 import me.zhengjie.utils.PageUtil;
+import me.zhengjie.utils.PageResult;
 import me.zhengjie.utils.QueryHelp;
 import me.zhengjie.utils.ValidationUtil;
 import org.springframework.data.domain.Page;
@@ -15,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -31,7 +31,7 @@ public class QuestionServiceImpl implements QuestionService {
     private final QuestionRepository questionRepository;
 
     @Override
-    public Map<String, Object> queryAll(QuestionDto criteria, Pageable pageable) {
+    public PageResult<QuestionDto> queryAll(QuestionDto criteria, Pageable pageable) {
         Page<Question> page = questionRepository.findAll((root, query, cb) -> 
                 QueryHelp.getPredicate(root, criteria, cb), pageable);
         return PageUtil.toPage(page.map(this::toDto));

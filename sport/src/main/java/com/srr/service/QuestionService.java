@@ -1,6 +1,7 @@
 package com.srr.service;
 
 import com.srr.dto.QuestionDto;
+import me.zhengjie.utils.PageResult;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
@@ -17,9 +18,9 @@ public interface QuestionService {
      * Get all questions
      * @param criteria Filter criteria
      * @param pageable Pagination information
-     * @return Map containing a list of QuestionDto objects and total count
+     * @return PageResult containing a list of QuestionDto objects and total count
      */
-    Map<String, Object> queryAll(QuestionDto criteria, Pageable pageable);
+    PageResult<QuestionDto> queryAll(QuestionDto criteria, Pageable pageable);
     
     /**
      * Get all questions for player self-assessment
