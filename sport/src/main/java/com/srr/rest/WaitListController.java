@@ -41,7 +41,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @Api(tags = "Wait List Management")
-@RequestMapping("/api/wait-list")
+@RequestMapping("/api/wait-lists")
 public class WaitListController {
 
     private final WaitListService waitListService;

@@ -51,8 +51,8 @@ import java.util.Map;
  **/
 @RestController
 @RequiredArgsConstructor
-@Api(tags = "event")
-@RequestMapping("/api/event")
+@Api(tags = "Event Management")
+@RequestMapping("/api/events")
 public class EventController {
 
     private final EventService eventService;

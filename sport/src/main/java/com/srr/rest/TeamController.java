@@ -40,14 +40,14 @@ public class TeamController {
 
     private final TeamService teamService;
 
-    @GetMapping("/team/{id}")
+    @GetMapping("/teams/{id}")
     @ApiOperation("Get team details")
     @PreAuthorize("@el.check('event:list')")
     public ResponseEntity<TeamDto> getTeam(@PathVariable Long id) {
         return new ResponseEntity<>(teamService.findById(id), HttpStatus.OK);
     }
 
-    @GetMapping("/event/{eventId}/team")
+    @GetMapping("/events/{eventId}/teams")
     @ApiOperation("Get all teams for an event")
     @PreAuthorize("@el.check('event:list')")
     public ResponseEntity<List<TeamDto>> getTeamsByEvent(@PathVariable Long eventId) {

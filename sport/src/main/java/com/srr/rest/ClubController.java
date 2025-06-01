@@ -40,9 +40,9 @@ import com.srr.dto.ClubDto;
 **/
 @RestController
 @RequiredArgsConstructor
-@Api(tags = "clubs")
+@Api(tags = "Club Management")
 @Slf4j
-@RequestMapping("/api/club")
+@RequestMapping("/api/clubs")
 public class ClubController {
 
     private final ClubService clubService;

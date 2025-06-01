@@ -39,8 +39,8 @@ import com.srr.dto.CourtDto;
 **/
 @RestController
 @RequiredArgsConstructor
-@Api(tags = "court")
-@RequestMapping("/api/court")
+@Api(tags = "Court Management")
+@RequestMapping("/api/courts")
 public class CourtController {
 
     private final CourtService courtService;

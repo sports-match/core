@@ -40,8 +40,8 @@ import com.srr.dto.SportDto;
 **/
 @RestController
 @RequiredArgsConstructor
-@Api(tags = "sport")
-@RequestMapping("/api/sport")
+@Api(tags = "Sport Management")
+@RequestMapping("/api/sports")
 public class SportController {
 
     private final SportService sportService;

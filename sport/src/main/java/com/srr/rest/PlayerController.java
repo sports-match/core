@@ -39,8 +39,8 @@ import com.srr.dto.PlayerDto;
 **/
 @RestController
 @RequiredArgsConstructor
-@Api(tags = "player")
-@RequestMapping("/api/player")
+@Api(tags = "Player Management")
+@RequestMapping("/api/players")
 public class PlayerController {
 
     private final PlayerService playerService;
@@ -60,8 +60,8 @@ public class PlayerController {
     }
 
     @PostMapping
-    @Log("Add sport")
-    @ApiOperation("Add sport")
+    @Log("Add player")
+    @ApiOperation("Add player")
     @PreAuthorize("@el.check('player:add')")
     public ResponseEntity<Object> createPlayer(@Validated @RequestBody Player resources){
         playerService.create(resources);
