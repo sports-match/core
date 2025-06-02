@@ -1,5 +1,6 @@
 package com.srr.service.impl;
 
+import com.srr.domain.Player;
 import com.srr.domain.PlayerAnswer;
 import com.srr.domain.Question;
 import com.srr.dto.PlayerAnswerDto;
@@ -9,19 +10,15 @@ import com.srr.repository.QuestionRepository;
 import com.srr.service.PlayerAnswerService;
 import lombok.RequiredArgsConstructor;
 import me.zhengjie.exception.BadRequestException;
-import me.zhengjie.utils.PageUtil;
-import me.zhengjie.utils.PageResult;
-import me.zhengjie.utils.QueryHelp;
-import me.zhengjie.utils.ValidationUtil;
+import me.zhengjie.exception.EntityNotFoundException;
+import me.zhengjie.utils.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -100,29 +97,57 @@ public class PlayerAnswerServiceImpl implements PlayerAnswerService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public PlayerAnswerDto create(PlayerAnswerDto resources) {
+    public ExecutionResult create(PlayerAnswerDto resources) {
         PlayerAnswer playerAnswer = new PlayerAnswer();
         playerAnswer.setPlayerId(resources.getPlayerId());
         playerAnswer.setQuestionId(resources.getQuestionId());
         playerAnswer.setAnswerValue(resources.getAnswerValue());
-        return toDto(playerAnswerRepository.save(playerAnswer));
+        PlayerAnswer saved = playerAnswerRepository.save(playerAnswer);
+        
+        // Recalculate player score after creating an answer
+        updatePlayerScore(resources.getPlayerId());
+        
+        return ExecutionResult.of(saved.getId());
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void update(PlayerAnswerDto resources) {
+    @Transactional
+    public ExecutionResult update(PlayerAnswerDto resources) {
         PlayerAnswer playerAnswer = playerAnswerRepository.findById(resources.getId())
-                .orElseThrow(() -> new BadRequestException("PlayerAnswer not found"));
-        playerAnswer.setPlayerId(resources.getPlayerId());
-        playerAnswer.setQuestionId(resources.getQuestionId());
+                .orElseThrow(() -> new EntityNotFoundException(PlayerAnswer.class, "id", resources.getId().toString()));
+        
+        Player player = playerRepository.findById(resources.getPlayerId())
+                .orElseThrow(() -> new EntityNotFoundException(Player.class, "id", resources.getPlayerId().toString()));
+        
+        Question question = questionRepository.findById(resources.getQuestionId())
+                .orElseThrow(() -> new EntityNotFoundException(Question.class, "id", resources.getQuestionId().toString()));
+        
+        playerAnswer.setPlayer(player);
+        playerAnswer.setQuestion(question);
         playerAnswer.setAnswerValue(resources.getAnswerValue());
-        playerAnswerRepository.save(playerAnswer);
+        
+        PlayerAnswer saved = playerAnswerRepository.save(playerAnswer);
+        
+        // Recalculate player score
+        updatePlayerScore(player.getId());
+        
+        return ExecutionResult.of(saved.getId());
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void delete(Long id) {
+    @Transactional
+    public ExecutionResult delete(Long id) {
+        PlayerAnswer playerAnswer = playerAnswerRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(PlayerAnswer.class, "id", id.toString()));
+        
+        Long playerId = playerAnswer.getPlayerId();
+        
         playerAnswerRepository.deleteById(id);
+        
+        // Recalculate player score
+        updatePlayerScore(playerId);
+        
+        return ExecutionResult.ofDeleted(id);
     }
 
     @Override
@@ -168,7 +193,6 @@ public class PlayerAnswerServiceImpl implements PlayerAnswerService {
      * Calculate and update player score based on self-assessment answers
      * @param playerId The player ID
      */
-    @Transactional
     private void updatePlayerScore(Long playerId) {
         List<PlayerAnswer> answers = playerAnswerRepository.findByPlayerId(playerId);
         if (answers.isEmpty()) {

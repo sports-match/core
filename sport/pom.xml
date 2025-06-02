@@ -26,6 +26,13 @@
             <artifactId>eladmin-tools</artifactId>
             <version>2.7</version>
         </dependency>
+        
+        <!-- Add dependency for eladmin-common -->
+        <dependency>
+            <groupId>me.zhengjie</groupId>
+            <artifactId>eladmin-common</artifactId>
+            <version>2.7</version>
+        </dependency>
 
         <!-- Explicitly add Lombok with provided scope -->
         <dependency>

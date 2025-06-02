@@ -22,6 +22,7 @@ import com.srr.service.WaitListService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import me.zhengjie.utils.ExecutionResult;
 import me.zhengjie.utils.PageResult;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -32,7 +33,9 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Chanheng
@@ -78,16 +81,17 @@ public class WaitListController {
     @ApiOperation("Add to wait list")
     @PostMapping
     @PreAuthorize("@el.check('waitList:add')")
-    public ResponseEntity<WaitListDto> createWaitList(@Validated @RequestBody WaitList resources) {
-        return new ResponseEntity<>(waitListService.create(resources), HttpStatus.CREATED);
+    public ResponseEntity<Object> create(@Validated @RequestBody WaitList resources) {
+        ExecutionResult result = waitListService.create(resources);
+        return new ResponseEntity<>(result.toMap(), HttpStatus.CREATED);
     }
 
     @ApiOperation("Update wait list entry")
     @PutMapping
     @PreAuthorize("@el.check('waitList:edit')")
-    public ResponseEntity<Object> updateWaitList(@Validated @RequestBody WaitList resources) {
-        waitListService.update(resources);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    public ResponseEntity<Object> update(@Validated @RequestBody WaitList resources) {
+        ExecutionResult result = waitListService.update(resources);
+        return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
     }
 
     @ApiOperation("Promote player from wait list to participant")
@@ -95,14 +99,21 @@ public class WaitListController {
     @PreAuthorize("@el.check('waitList:edit')")
     public ResponseEntity<Object> promoteWaitListEntry(@PathVariable Long id) {
         boolean success = waitListService.promoteToParticipant(id);
-        return new ResponseEntity<>(success ? HttpStatus.OK : HttpStatus.BAD_REQUEST);
+        if (success) {
+            Map<String, Object> result = new HashMap<>();
+            result.put("id", id);
+            result.put("promoted", true);
+            return new ResponseEntity<>(result, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
     }
 
     @ApiOperation("Delete wait list entry")
     @DeleteMapping(value = "/{id}")
     @PreAuthorize("@el.check('waitList:del')")
     public ResponseEntity<Object> deleteWaitList(@PathVariable Long id) {
-        waitListService.delete(id);
-        return new ResponseEntity<>(HttpStatus.OK);
+        ExecutionResult result = waitListService.delete(id);
+        return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
     }
 }

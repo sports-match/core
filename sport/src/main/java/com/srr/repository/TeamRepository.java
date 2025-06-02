@@ -36,4 +36,11 @@ public interface TeamRepository extends JpaRepository<Team, Long>, JpaSpecificat
      */
     @Query("SELECT t FROM Team t WHERE t.event.id = :eventId")
     List<Team> findByEventId(@Param("eventId") Long eventId);
+    
+    /**
+     * Find all teams for a specific event (alias for findByEventId)
+     * @param eventId ID of the event
+     * @return List of teams
+     */
+    List<Team> findAllByEventId(Long eventId);
 }

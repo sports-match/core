@@ -31,7 +31,10 @@ import io.swagger.annotations.*;
 import java.io.IOException;
 import javax.servlet.http.HttpServletResponse;
 import me.zhengjie.utils.PageResult;
+import me.zhengjie.utils.ExecutionResult;
 import com.srr.dto.SportDto;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
 * @website https://eladmin.vip
@@ -71,25 +74,25 @@ public class SportController {
     @ApiOperation("Add sport")
     @PreAuthorize("@el.check('sport:add')")
     public ResponseEntity<Object> createSport(@Validated @RequestBody Sport resources){
-        sportService.create(resources);
-        return new ResponseEntity<>(HttpStatus.CREATED);
+        ExecutionResult result = sportService.create(resources);
+        return new ResponseEntity<>(result.toMap(), HttpStatus.CREATED);
     }
 
     @PutMapping
-    @Log("Edit sport")
-    @ApiOperation("Edit sport")
+    @Log("Modify sport")
+    @ApiOperation("Modify sport")
     @PreAuthorize("@el.check('sport:edit')")
     public ResponseEntity<Object> updateSport(@Validated @RequestBody Sport resources){
-        sportService.update(resources);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        ExecutionResult result = sportService.update(resources);
+        return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
     }
 
     @DeleteMapping
     @Log("Delete sport")
     @ApiOperation("Delete sport")
     @PreAuthorize("@el.check('sport:del')")
-    public ResponseEntity<Object> deleteSport(@ApiParam(value = "Pass ID array []") @RequestBody Long[] ids) {
-        sportService.deleteAll(ids);
-        return new ResponseEntity<>(HttpStatus.OK);
+    public ResponseEntity<Object> deleteSport(@RequestBody Long[] ids) {
+        ExecutionResult result = sportService.deleteAll(ids);
+        return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
     }
 }

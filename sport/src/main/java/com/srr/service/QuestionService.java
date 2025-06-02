@@ -1,6 +1,7 @@
 package com.srr.service;
 
 import com.srr.dto.QuestionDto;
+import me.zhengjie.utils.ExecutionResult;
 import me.zhengjie.utils.PageResult;
 import org.springframework.data.domain.Pageable;
 
@@ -43,16 +44,18 @@ public interface QuestionService {
     QuestionDto create(QuestionDto resources);
     
     /**
-     * Update a question
-     * @param resources QuestionDto object with updated information
+     * Update question
+     * @param resources Question DTO
+     * @return ExecutionResult containing the updated entity ID
      */
-    void update(QuestionDto resources);
-    
+    ExecutionResult update(QuestionDto resources);
+
     /**
-     * Delete a question by ID
+     * Delete question
      * @param id Question ID
+     * @return ExecutionResult containing the deleted entity ID
      */
-    void delete(Long id);
+    ExecutionResult delete(Long id);
     
     /**
      * Get a question by ID

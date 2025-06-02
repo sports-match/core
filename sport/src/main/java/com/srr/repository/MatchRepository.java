@@ -55,4 +55,11 @@ public interface MatchRepository extends JpaRepository<Match, Long>, JpaSpecific
      */
     @Query("SELECT m FROM Match m WHERE m.teamA.id IN :teamAIds OR m.teamB.id IN :teamBIds ORDER BY m.matchOrder ASC")
     List<Match> findByTeamAIdInOrTeamBIdIn(@Param("teamAIds") Set<Long> teamAIds, @Param("teamBIds") Set<Long> teamBIds);
+    
+    /**
+     * Find all matches for a specific match group
+     * @param matchGroupId ID of the match group
+     * @return List of matches
+     */
+    List<Match> findAllByMatchGroupId(Long matchGroupId);
 }

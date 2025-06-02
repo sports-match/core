@@ -16,8 +16,7 @@
 package com.srr.service.impl;
 
 import com.srr.domain.Club;
-import me.zhengjie.utils.ValidationUtil;
-import me.zhengjie.utils.FileUtil;
+import me.zhengjie.utils.*;
 import lombok.RequiredArgsConstructor;
 import com.srr.repository.ClubRepository;
 import com.srr.service.ClubService;
@@ -28,15 +27,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import me.zhengjie.utils.PageUtil;
-import me.zhengjie.utils.QueryHelp;
+
 import java.util.List;
 import java.util.Map;
 import java.io.IOException;
 import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import me.zhengjie.utils.PageResult;
 
 /**
 * @website https://eladmin.vip
@@ -72,25 +69,28 @@ public class ClubServiceImpl implements ClubService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void create(Club resources) {
-        clubRepository.save(resources);
+    public ExecutionResult create(Club resources) {
+        Club savedClub = clubRepository.save(resources);
+        return ExecutionResult.of(savedClub.getId());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void update(Club resources) {
+    public ExecutionResult update(Club resources) {
         Club club = clubRepository.findById(resources.getId()).orElseGet(Club::new);
         ValidationUtil.isNull( club.getId(),"Club","id",resources.getId());
         club.copy(resources);
-        clubRepository.save(club);
+        Club savedClub = clubRepository.save(club);
+        return ExecutionResult.of(savedClub.getId());
     }
 
     @Override
     @Transactional
-    public void deleteAll(Long[] ids) {
+    public ExecutionResult deleteAll(Long[] ids) {
         for (Long id : ids) {
             clubRepository.deleteById(id);
         }
+        return ExecutionResult.of(null, Map.of("count", ids.length, "ids", ids));
     }
 
     @Override

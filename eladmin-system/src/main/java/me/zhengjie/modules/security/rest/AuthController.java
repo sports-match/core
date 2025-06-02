@@ -27,6 +27,7 @@ import me.zhengjie.annotation.rest.AnonymousGetMapping;
 import me.zhengjie.annotation.rest.AnonymousPostMapping;
 import me.zhengjie.config.properties.RsaProperties;
 import me.zhengjie.exception.BadRequestException;
+import me.zhengjie.exception.EntityNotFoundException;
 import me.zhengjie.modules.security.config.CaptchaConfig;
 import me.zhengjie.modules.security.config.enums.LoginCodeEnum;
 import me.zhengjie.modules.security.config.LoginProperties;
@@ -42,6 +43,7 @@ import me.zhengjie.modules.system.domain.User;
 import me.zhengjie.modules.system.service.UserService;
 import me.zhengjie.modules.system.service.VerifyService;
 import me.zhengjie.domain.vo.EmailVo;
+import me.zhengjie.utils.ExecutionResult;
 import me.zhengjie.utils.RsaUtils;
 import me.zhengjie.utils.RedisUtils;
 import me.zhengjie.utils.SecurityUtils;
@@ -55,6 +57,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
 import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
@@ -81,7 +84,7 @@ public class AuthController {
     private final UserDetailsServiceImpl userDetailsService;
     private final VerifyService verifyService;
     private final UserService userService;
-    
+
     private final String REGISTER_KEY_PREFIX = "register:email:";
 
     @Log("用户登录")
@@ -160,7 +163,7 @@ public class AuthController {
         onlineUserService.logout(tokenProvider.getToken(request));
         return new ResponseEntity<>(HttpStatus.OK);
     }
-    
+
     @ApiOperation("用户注册")
     @AnonymousPostMapping(value = "/register")
     public ResponseEntity<Object> register(@Validated @RequestBody UserRegisterDto registerDto) {
@@ -168,13 +171,12 @@ public class AuthController {
         try {
             userService.findByName(registerDto.getUsername());
             throw new BadRequestException("用户名已存在");
-        } catch (Exception e) {
-            if (!(e instanceof BadRequestException && e.getMessage().contains("不存在"))) {
-                throw e;
-            }
+        } catch (EntityNotFoundException e) {
             // Username doesn't exist, continue with registration
+        } catch (Exception e) {
+            throw new BadRequestException(e.getMessage());
         }
-        
+
         // Create a new user with unverified email
         User user = new User();
         user.setUsername(registerDto.getUsername());
@@ -184,38 +186,40 @@ public class AuthController {
         user.setPhone(registerDto.getPhone());
         user.setEnabled(false); // User is disabled until email is verified
         user.setEmailVerified(false);
-        
-        userService.create(user);
-        
+
+        ExecutionResult result = userService.create(user);
+
         // Send verification email
         String key = REGISTER_KEY_PREFIX + registerDto.getEmail();
-        EmailVo emailVo = verifyService.sendEmail(registerDto.getEmail(), key);
-        
-        return new ResponseEntity<>(HttpStatus.CREATED);
+        verifyService.sendEmail(registerDto.getEmail(), key);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("userId", result.id()); 
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
-    
+
     @ApiOperation("验证邮箱")
     @AnonymousPostMapping(value = "/verify-email")
     public ResponseEntity<Object> verifyEmail(@Validated @RequestBody EmailVerificationDto verificationDto) {
         String key = REGISTER_KEY_PREFIX + verificationDto.getEmail();
-        
+
         // Validate OTP code
         verifyService.validated(key, verificationDto.getCode());
-        
+
         // Find user by email
         User user = userService.findByEmail(verificationDto.getEmail());
         if (user == null) {
             throw new BadRequestException("用户不存在");
         }
-        
+
         // Update user status
         user.setEmailVerified(true);
         user.setEnabled(true);
-        userService.updateEmailVerificationStatus(user);
-        
+        ExecutionResult result = userService.updateEmailVerificationStatus(user);
+
         return new ResponseEntity<>(HttpStatus.OK);
     }
-    
+
     @ApiOperation("重新发送验证邮件")
     @AnonymousPostMapping(value = "/resend-verification")
     public ResponseEntity<Object> resendVerification(@RequestParam String email) {
@@ -224,16 +228,16 @@ public class AuthController {
         if (user == null) {
             throw new BadRequestException("用户不存在");
         }
-        
+
         // Check if already verified
         if (user.getEmailVerified()) {
             throw new BadRequestException("邮箱已验证");
         }
-        
+
         // Send verification email
         String key = REGISTER_KEY_PREFIX + email;
         EmailVo emailVo = verifyService.sendEmail(email, key);
-        
+
         return new ResponseEntity<>(HttpStatus.OK);
     }
 }

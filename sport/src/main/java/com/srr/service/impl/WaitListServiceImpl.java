@@ -26,6 +26,7 @@ import com.srr.service.WaitListService;
 import lombok.RequiredArgsConstructor;
 import me.zhengjie.exception.BadRequestException;
 import me.zhengjie.exception.EntityNotFoundException;
+import me.zhengjie.utils.ExecutionResult;
 import me.zhengjie.utils.FileUtil;
 import me.zhengjie.utils.PageUtil;
 import me.zhengjie.utils.QueryHelp;
@@ -53,7 +54,7 @@ public class WaitListServiceImpl implements WaitListService {
 
     @Override
     @Transactional
-    public WaitListDto create(WaitList resources) {
+    public ExecutionResult create(WaitList resources) {
         // Validate event exists
         Event event = eventRepository.findById(resources.getEventId())
                 .orElseThrow(() -> new EntityNotFoundException(Event.class, "id", String.valueOf(resources.getEventId())));
@@ -66,28 +67,32 @@ public class WaitListServiceImpl implements WaitListService {
         // Set default status
         resources.setStatus(WaitListStatus.WAITING);
         
-        return mapToDto(waitListRepository.save(resources));
+        WaitList saved = waitListRepository.save(resources);
+        return ExecutionResult.of(saved.getId(), Map.of("status", saved.getStatus()));
     }
 
     @Override
     @Transactional
-    public void update(WaitList resources) {
+    public ExecutionResult update(WaitList resources) {
         WaitList waitList = waitListRepository.findById(resources.getId())
                 .orElseThrow(() -> new EntityNotFoundException(WaitList.class, "id", String.valueOf(resources.getId())));
         waitList.copy(resources);
         waitListRepository.save(waitList);
+        return ExecutionResult.of(resources.getId());
     }
 
     @Override
     @Transactional
-    public void delete(Long id) {
+    public ExecutionResult delete(Long id) {
         waitListRepository.deleteById(id);
+        return ExecutionResult.ofDeleted(id);
     }
 
     @Override
     @Transactional
-    public void deleteAll(List<Long> ids) {
+    public ExecutionResult deleteAll(List<Long> ids) {
         waitListRepository.deleteAllById(ids);
+        return ExecutionResult.of(null, Map.of("count", ids.size(), "ids", ids));
     }
 
     @Override

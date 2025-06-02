@@ -6,6 +6,8 @@ import com.srr.repository.QuestionRepository;
 import com.srr.service.QuestionService;
 import lombok.RequiredArgsConstructor;
 import me.zhengjie.exception.BadRequestException;
+import me.zhengjie.exception.EntityNotFoundException;
+import me.zhengjie.utils.ExecutionResult;
 import me.zhengjie.utils.PageUtil;
 import me.zhengjie.utils.PageResult;
 import me.zhengjie.utils.QueryHelp;
@@ -64,22 +66,32 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void update(QuestionDto resources) {
+    @Transactional
+    public ExecutionResult update(QuestionDto resources) {
         Question question = questionRepository.findById(resources.getId())
-                .orElseThrow(() -> new BadRequestException("Question not found"));
-        question.setText(resources.getText());
-        question.setCategory(resources.getCategory());
-        question.setOrderIndex(resources.getOrderIndex());
-        question.setMinValue(resources.getMinValue());
-        question.setMaxValue(resources.getMaxValue());
-        questionRepository.save(question);
+                .orElseThrow(() -> new EntityNotFoundException(Question.class, "id", resources.getId().toString()));
+        Question updated = new Question();
+        updated.setId(question.getId());
+        updated.setText(resources.getText());
+        updated.setCategory(resources.getCategory());
+        updated.setOrderIndex(resources.getOrderIndex());
+        updated.setMinValue(resources.getMinValue());
+        updated.setMaxValue(resources.getMaxValue());
+        updated.setCreateTime(question.getCreateTime());
+        questionRepository.save(updated);
+        return ExecutionResult.of(updated.getId());
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void delete(Long id) {
+    @Transactional
+    public ExecutionResult delete(Long id) {
+        // Verify question exists
+        if (!questionRepository.existsById(id)) {
+            throw new EntityNotFoundException(Question.class, "id", id.toString());
+        }
+        // Delete question
         questionRepository.deleteById(id);
+        return ExecutionResult.ofDeleted(id);
     }
 
     @Override

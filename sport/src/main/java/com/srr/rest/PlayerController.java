@@ -15,22 +15,22 @@
 */
 package com.srr.rest;
 
-import me.zhengjie.annotation.Log;
 import com.srr.domain.Player;
-import com.srr.service.PlayerService;
+import com.srr.dto.PlayerDto;
 import com.srr.dto.PlayerQueryCriteria;
-import org.springframework.data.domain.Pageable;
+import com.srr.service.PlayerService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import me.zhengjie.annotation.Log;
+import me.zhengjie.utils.ExecutionResult;
+import me.zhengjie.utils.PageResult;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import io.swagger.annotations.*;
-import java.io.IOException;
-import javax.servlet.http.HttpServletResponse;
-import me.zhengjie.utils.PageResult;
-import com.srr.dto.PlayerDto;
 
 /**
 * @website https://eladmin.vip
@@ -64,8 +64,8 @@ public class PlayerController {
     @ApiOperation("Add player")
     @PreAuthorize("@el.check('player:add')")
     public ResponseEntity<Object> createPlayer(@Validated @RequestBody Player resources){
-        playerService.create(resources);
-        return new ResponseEntity<>(HttpStatus.CREATED);
+        ExecutionResult result = playerService.create(resources);
+        return new ResponseEntity<>(result.toMap(), HttpStatus.CREATED);
     }
 
     @PutMapping
@@ -73,16 +73,16 @@ public class PlayerController {
     @ApiOperation("Edit sport")
     @PreAuthorize("@el.check('player:edit')")
     public ResponseEntity<Object> updatePlayer(@Validated @RequestBody Player resources){
-        playerService.update(resources);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        ExecutionResult result = playerService.update(resources);
+        return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
     }
 
     @DeleteMapping
-    @Log("Delete sport")
-    @ApiOperation("Delete sport")
+    @Log("Delete player")
+    @ApiOperation("Delete player")
     @PreAuthorize("@el.check('player:del')")
-    public ResponseEntity<Object> deletePlayer(@ApiParam(value = "Pass ID array []") @RequestBody Long[] ids) {
-        playerService.deleteAll(ids);
-        return new ResponseEntity<>(HttpStatus.OK);
+    public ResponseEntity<Object> deletePlayer(@RequestBody Long[] ids) {
+        ExecutionResult result = playerService.deleteAll(ids);
+        return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
     }
 }

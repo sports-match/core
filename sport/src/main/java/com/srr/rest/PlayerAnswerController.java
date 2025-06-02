@@ -5,6 +5,7 @@ import com.srr.service.PlayerAnswerService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import me.zhengjie.utils.ExecutionResult;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +13,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
 * @description PlayerAnswer controller for API endpoints
@@ -81,23 +84,23 @@ public class PlayerAnswerController {
     @ApiOperation("Create a new player answer")
     @PostMapping
     @PreAuthorize("@el.check('playerAnswer:add')")
-    public ResponseEntity<PlayerAnswerDto> create(@Validated @RequestBody PlayerAnswerDto resources) {
+    public ResponseEntity<ExecutionResult> create(@Validated @RequestBody PlayerAnswerDto resources) {
         return new ResponseEntity<>(playerAnswerService.create(resources), HttpStatus.CREATED);
     }
     
     @ApiOperation("Update a player answer")
     @PutMapping
     @PreAuthorize("@el.check('playerAnswer:edit')")
-    public ResponseEntity<Void> update(@Validated @RequestBody PlayerAnswerDto resources) {
-        playerAnswerService.update(resources);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    public ResponseEntity<Object> update(@Validated @RequestBody PlayerAnswerDto resources) {
+        ExecutionResult result = playerAnswerService.update(resources);
+        return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
     }
     
     @ApiOperation("Delete a player answer")
     @DeleteMapping("/{id}")
     @PreAuthorize("@el.check('playerAnswer:del')")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        playerAnswerService.delete(id);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    public ResponseEntity<Object> delete(@PathVariable Long id) {
+        ExecutionResult result = playerAnswerService.delete(id);
+        return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
     }
 }

@@ -24,6 +24,7 @@ import com.srr.service.SportService;
 import com.srr.dto.SportDto;
 import com.srr.dto.SportQueryCriteria;
 import com.srr.dto.mapstruct.SportMapper;
+import me.zhengjie.utils.ExecutionResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
@@ -72,25 +73,28 @@ public class SportServiceImpl implements SportService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void create(Sport resources) {
-        sportRepository.save(resources);
+    public ExecutionResult create(Sport resources) {
+        Sport savedSport = sportRepository.save(resources);
+        return ExecutionResult.of(savedSport.getId());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void update(Sport resources) {
+    public ExecutionResult update(Sport resources) {
         Sport sport = sportRepository.findById(resources.getId()).orElseGet(Sport::new);
         ValidationUtil.isNull( sport.getId(),"Sport","id",resources.getId());
         sport.copy(resources);
-        sportRepository.save(sport);
+        Sport savedSport = sportRepository.save(sport);
+        return ExecutionResult.of(savedSport.getId());
     }
 
     @Override
     @Transactional
-    public void deleteAll(Long[] ids) {
+    public ExecutionResult deleteAll(Long[] ids) {
         for (Long id : ids) {
             sportRepository.deleteById(id);
         }
+        return ExecutionResult.of(null, Map.of("count", ids.length, "ids", ids));
     }
 
     @Override

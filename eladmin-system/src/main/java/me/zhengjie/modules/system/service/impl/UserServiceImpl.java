@@ -84,7 +84,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void create(User resources) {
+    public ExecutionResult create(User resources) {
         if (userRepository.findByUsername(resources.getUsername()) != null) {
             throw new EntityExistException(User.class, "username", resources.getUsername());
         }
@@ -94,12 +94,13 @@ public class UserServiceImpl implements UserService {
         if (userRepository.findByPhone(resources.getPhone()) != null) {
             throw new EntityExistException(User.class, "phone", resources.getPhone());
         }
-        userRepository.save(resources);
+        User savedUser = userRepository.save(resources);
+        return new ExecutionResult(savedUser.getId(), null);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void update(User resources) throws Exception {
+    public ExecutionResult update(User resources) throws Exception {
         User user = userRepository.findById(resources.getId()).orElseGet(User::new);
         ValidationUtil.isNull(user.getId(), "User", "id", resources.getId());
         User user1 = userRepository.findByUsername(resources.getUsername());
@@ -140,11 +141,12 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
         // Clear cache
         delCaches(user.getId(), user.getUsername());
+        return new ExecutionResult(user.getId(), null);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateCenter(User resources) {
+    public ExecutionResult updateCenter(User resources) {
         User user = userRepository.findById(resources.getId()).orElseGet(User::new);
         User user1 = userRepository.findByPhone(resources.getPhone());
         if (user1 != null && !user.getId().equals(user1.getId())) {
@@ -156,17 +158,23 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
         // Clear cache
         delCaches(user.getId(), user.getUsername());
+        return new ExecutionResult(user.getId(), null);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void delete(Set<Long> ids) {
+    public ExecutionResult delete(Set<Long> ids) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("count", ids.size());
+        result.put("ids", ids);
+        
         for (Long id : ids) {
             // Clear cache
             UserDto user = findById(id);
             delCaches(user.getId(), user.getUsername());
         }
         userRepository.deleteAllByIdIn(ids);
+        return new ExecutionResult(null, result);
     }
 
     @Override
@@ -191,24 +199,26 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updatePass(String username, String pass) {
+    public ExecutionResult updatePass(String username, String pass) {
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new EntityNotFoundException(User.class, "username", username);
+        }
+        
         userRepository.updatePass(username, pass, new Date());
         flushCache(username);
+        return new ExecutionResult(user.getId(), null);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void resetPwd(Set<Long> ids, String pwd) {
-        List<User> users = userRepository.findAllById(ids);
-        // Clear cache
-        users.forEach(user -> {
-            // Clear cache
-            flushCache(user.getUsername());
-            // Force logout
-            onlineUserService.kickOutForUsername(user.getUsername());
-        });
-        // Reset password
+    public ExecutionResult resetPwd(Set<Long> ids, String pwd) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("count", ids.size());
+        result.put("ids", ids);
+        
         userRepository.resetPwd(ids, pwd);
+        return new ExecutionResult(null, result);
     }
 
     @Override
@@ -252,7 +262,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateEmailVerificationStatus(User user) {
+    public ExecutionResult updateEmailVerificationStatus(User user) {
         User existingUser = userRepository.findById(user.getId()).orElseGet(User::new);
         ValidationUtil.isNull(existingUser.getId(), "User", "id", user.getId());
         
@@ -262,6 +272,8 @@ public class UserServiceImpl implements UserService {
         
         // Clear cache
         delCaches(existingUser.getId(), existingUser.getUsername());
+        
+        return new ExecutionResult(existingUser.getId(), null);
     }
 
     @Override

@@ -18,12 +18,13 @@ package com.srr.service;
 import com.srr.domain.Club;
 import com.srr.dto.ClubDto;
 import com.srr.dto.ClubQueryCriteria;
+import me.zhengjie.utils.ExecutionResult;
+import me.zhengjie.utils.PageResult;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.io.IOException;
 import javax.servlet.http.HttpServletResponse;
-import me.zhengjie.utils.PageResult;
 
 /**
 * @website https://eladmin.vip
@@ -58,20 +59,23 @@ public interface ClubService {
     /**
     * Create
     * @param resources /
+    * @return ExecutionResult containing the created entity ID
     */
-    void create(Club resources);
+    ExecutionResult create(Club resources);
 
     /**
     * Edit
     * @param resources /
+    * @return ExecutionResult containing the updated entity ID
     */
-    void update(Club resources);
+    ExecutionResult update(Club resources);
 
     /**
     * Multiple selection delete
     * @param ids /
+    * @return ExecutionResult containing the deleted IDs
     */
-    void deleteAll(Long[] ids);
+    ExecutionResult deleteAll(Long[] ids);
 
     /**
     * Export data

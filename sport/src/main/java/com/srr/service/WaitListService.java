@@ -18,6 +18,7 @@ package com.srr.service;
 import com.srr.domain.WaitList;
 import com.srr.dto.WaitListDto;
 import com.srr.dto.WaitListQueryCriteria;
+import me.zhengjie.utils.ExecutionResult;
 import me.zhengjie.utils.PageResult;
 import org.springframework.data.domain.Pageable;
 
@@ -35,27 +36,33 @@ public interface WaitListService {
     /**
      * Add a player to the wait list
      * @param waitList Player wait list entry
-     * @return Created wait list entry
+     * @return ExecutionResult containing the created entity ID
      */
-    WaitListDto create(WaitList waitList);
+    ExecutionResult create(WaitList waitList);
 
     /**
-     * Update wait list entry
-     * @param waitList Updated wait list entry
+     * Update waitlist
+     * 
+     * @param waitList
+     * @return ExecutionResult containing the updated entity ID
      */
-    void update(WaitList waitList);
+    ExecutionResult update(WaitList waitList);
 
     /**
-     * Delete wait list entry
-     * @param id Wait list entry ID
+     * Delete a waitlist
+     * 
+     * @param id
+     * @return ExecutionResult containing the deleted entity ID
      */
-    void delete(Long id);
+    ExecutionResult delete(Long id);
     
     /**
-     * Delete multiple wait list entries
-     * @param ids List of wait list entry IDs
+     * Delete multiple waitlists
+     * 
+     * @param ids
+     * @return ExecutionResult containing information about the deleted entities
      */
-    void deleteAll(List<Long> ids);
+    ExecutionResult deleteAll(List<Long> ids);
 
     /**
      * Find a wait list entry by ID

@@ -26,6 +26,7 @@ import java.util.List;
 import java.io.IOException;
 import javax.servlet.http.HttpServletResponse;
 import me.zhengjie.utils.PageResult;
+import me.zhengjie.utils.ExecutionResult;
 
 /**
 * @website https://eladmin.vip
@@ -79,10 +80,11 @@ public interface EventService {
     EventDto joinEvent(JoinEventDto joinEventDto);
 
     /**
-    * Multi-select delete
-    * @param ids /
-    */
-    void deleteAll(Long[] ids);
+     * Delete multiple events
+     * @param ids Array of event IDs to delete
+     * @return ExecutionResult containing information about the deleted entities
+     */
+    ExecutionResult deleteAll(Long[] ids);
 
     /**
     * Export data

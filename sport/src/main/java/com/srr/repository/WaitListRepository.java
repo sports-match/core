@@ -36,6 +36,13 @@ public interface WaitListRepository extends JpaRepository<WaitList, Long>, JpaSp
     List<WaitList> findByEventId(Long eventId);
     
     /**
+     * Find all wait list entries for an event (alias for findByEventId)
+     * @param eventId The event ID
+     * @return List of wait list entries
+     */
+    List<WaitList> findAllByEventId(Long eventId);
+    
+    /**
      * Find all wait list entries for a player
      * @param playerId The player ID
      * @return List of wait list entries
