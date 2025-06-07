@@ -40,12 +40,6 @@ public class UserDto extends BaseDTO implements Serializable {
     @ApiModelProperty(value = "角色")
     private Set<RoleSmallDto> roles;
 
-    @ApiModelProperty(value = "部门")
-    private DeptSmallDto dept;
-
-    @ApiModelProperty(value = "部门ID")
-    private Long deptId;
-
     @ApiModelProperty(value = "用户名")
     private String username;
 

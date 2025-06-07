@@ -15,7 +15,6 @@
  */
 package me.zhengjie.modules.system.rest;
 
-import cn.hutool.core.collection.CollectionUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +23,6 @@ import me.zhengjie.config.properties.RsaProperties;
 import me.zhengjie.exception.BadRequestException;
 import me.zhengjie.modules.system.domain.User;
 import me.zhengjie.modules.system.domain.vo.UserPassVo;
-import me.zhengjie.modules.system.service.DataService;
 import me.zhengjie.modules.system.service.RoleService;
 import me.zhengjie.modules.system.service.UserService;
 import me.zhengjie.modules.system.service.VerifyService;
@@ -50,7 +48,6 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -65,7 +62,6 @@ public class UserController {
 
     private final PasswordEncoder passwordEncoder;
     private final UserService userService;
-    private final DataService dataService;
     private final RoleService roleService;
     private final VerifyService verificationCodeService;
 
@@ -79,27 +75,19 @@ public class UserController {
     @ApiOperation("Query User")
     @GetMapping
     @PreAuthorize("@el.check('user:list')")
-    public ResponseEntity<PageResult<UserDto>> queryUser(UserQueryCriteria criteria, Pageable pageable){
-        if (!ObjectUtils.isEmpty(criteria.getDeptId())) {
-            criteria.getDeptIds().add(criteria.getDeptId());
-            // 先查找是否存在子节点
-            // 然后把子节点的ID都加入到集合中
+    public ResponseEntity<PageResult<UserDto>> queryUser(UserQueryCriteria criteria, Pageable pageable) {
+        // Get current user information
+        UserDto currentUser = userService.findByName(SecurityUtils.getCurrentUsername());
+
+        // If user is admin, return all users
+        if (currentUser.getIsAdmin()) {
+            return new ResponseEntity<>(userService.queryAll(criteria, pageable), HttpStatus.OK);
         }
-        // 数据权限
-        List<Long> dataScopes = dataService.getDeptIds(userService.findByName(SecurityUtils.getCurrentUsername()));
-        // criteria.getDeptIds() 不为空并且数据权限不为空则取交集
-        if (!CollectionUtils.isEmpty(criteria.getDeptIds()) && !CollectionUtils.isEmpty(dataScopes)){
-            // 取交集
-            criteria.getDeptIds().retainAll(dataScopes);
-            if(!CollectionUtil.isEmpty(criteria.getDeptIds())){
-                return new ResponseEntity<>(userService.queryAll(criteria,pageable),HttpStatus.OK);
-            }
-        } else {
-            // 否则取并集
-            criteria.getDeptIds().addAll(dataScopes);
-            return new ResponseEntity<>(userService.queryAll(criteria,pageable),HttpStatus.OK);
+        // Otherwise, only return the current user's data
+        else {
+            criteria.setId(currentUser.getId());
+            return new ResponseEntity<>(userService.queryAll(criteria, pageable), HttpStatus.OK);
         }
-        return new ResponseEntity<>(PageUtil.noData(),HttpStatus.OK);
     }
 
     @ApiOperation("获取单个用户")
@@ -113,7 +101,7 @@ public class UserController {
     @ApiOperation("新增用户")
     @PostMapping
     @PreAuthorize("@el.check('user:add')")
-    public ResponseEntity<Object> createUser(@Validated @RequestBody User resources){
+    public ResponseEntity<Object> createUser(@Validated @RequestBody User resources) {
         checkLevel(resources);
         // 默认密码 123456
         resources.setPassword(passwordEncoder.encode("123456"));
@@ -134,8 +122,8 @@ public class UserController {
     @Log("修改用户：个人中心")
     @ApiOperation("修改用户：个人中心")
     @PutMapping(value = "center")
-    public ResponseEntity<Object> centerUser(@Validated(User.Update.class) @RequestBody User resources){
-        if(!resources.getId().equals(SecurityUtils.getCurrentUserId())){
+    public ResponseEntity<Object> centerUser(@Validated(User.Update.class) @RequestBody User resources) {
+        if (!resources.getId().equals(SecurityUtils.getCurrentUserId())) {
             throw new BadRequestException("不能修改他人资料");
         }
         userService.updateCenter(resources);
@@ -146,13 +134,13 @@ public class UserController {
     @ApiOperation("删除用户")
     @DeleteMapping
     @PreAuthorize("@el.check('user:del')")
-    public ResponseEntity<Object> deleteUser(@RequestBody Set<Long> ids){
+    public ResponseEntity<Object> deleteUser(@RequestBody Set<Long> ids) {
         for (Long id : ids) {
-            Integer currentLevel =  Collections.min(roleService.findByUsersId(SecurityUtils.getCurrentUserId())
+            Integer currentLevel = Collections.min(roleService.findByUsersId(SecurityUtils.getCurrentUserId())
                     .stream()
                     .map(RoleSmallDto::getLevel)
                     .toList());
-            Integer optLevel =  Collections.min(roleService.findByUsersId(id)
+            Integer optLevel = Collections.min(roleService.findByUsersId(id)
                     .stream()
                     .map(RoleSmallDto::getLevel)
                     .toList());
@@ -167,16 +155,16 @@ public class UserController {
     @ApiOperation("修改密码")
     @PostMapping(value = "/updatePass")
     public ResponseEntity<Object> updateUserPass(@RequestBody UserPassVo passVo) throws Exception {
-        String oldPass = RsaUtils.decryptByPrivateKey(RsaProperties.privateKey,passVo.getOldPass());
-        String newPass = RsaUtils.decryptByPrivateKey(RsaProperties.privateKey,passVo.getNewPass());
+        String oldPass = RsaUtils.decryptByPrivateKey(RsaProperties.privateKey, passVo.getOldPass());
+        String newPass = RsaUtils.decryptByPrivateKey(RsaProperties.privateKey, passVo.getNewPass());
         UserDto user = userService.findByName(SecurityUtils.getCurrentUsername());
-        if(!passwordEncoder.matches(oldPass, user.getPassword())){
+        if (!passwordEncoder.matches(oldPass, user.getPassword())) {
             throw new BadRequestException("修改失败，旧密码错误");
         }
-        if(passwordEncoder.matches(newPass, user.getPassword())){
+        if (passwordEncoder.matches(newPass, user.getPassword())) {
             throw new BadRequestException("新密码不能与旧密码相同");
         }
-        userService.updatePass(user.getUsername(),passwordEncoder.encode(newPass));
+        userService.updatePass(user.getUsername(), passwordEncoder.encode(newPass));
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
@@ -190,30 +178,31 @@ public class UserController {
 
     @ApiOperation("修改头像")
     @PostMapping(value = "/updateAvatar")
-    public ResponseEntity<Object> updateUserAvatar(@RequestParam MultipartFile avatar){
+    public ResponseEntity<Object> updateUserAvatar(@RequestParam MultipartFile avatar) {
         return new ResponseEntity<>(userService.updateAvatar(avatar), HttpStatus.OK);
     }
 
     @Log("修改邮箱")
     @ApiOperation("修改邮箱")
     @PostMapping(value = "/updateEmail/{code}")
-    public ResponseEntity<Object> updateUserEmail(@PathVariable String code,@RequestBody User user) throws Exception {
-        String password = RsaUtils.decryptByPrivateKey(RsaProperties.privateKey,user.getPassword());
+    public ResponseEntity<Object> updateUserEmail(@PathVariable String code, @RequestBody User user) throws Exception {
+        String password = RsaUtils.decryptByPrivateKey(RsaProperties.privateKey, user.getPassword());
         UserDto userDto = userService.findByName(SecurityUtils.getCurrentUsername());
-        if(!passwordEncoder.matches(password, userDto.getPassword())){
+        if (!passwordEncoder.matches(password, userDto.getPassword())) {
             throw new BadRequestException("密码错误");
         }
         verificationCodeService.validated(CodeEnum.EMAIL_RESET_EMAIL_CODE.getKey() + user.getEmail(), code);
-        userService.updateEmail(userDto.getUsername(),user.getEmail());
+        userService.updateEmail(userDto.getUsername(), user.getEmail());
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
     /**
      * 如果当前用户的角色级别低于创建用户的角色级别，则抛出权限不足的错误
+     *
      * @param resources /
      */
     private void checkLevel(User resources) {
-        Integer currentLevel =  Collections.min(roleService.findByUsersId(SecurityUtils.getCurrentUserId())
+        Integer currentLevel = Collections.min(roleService.findByUsersId(SecurityUtils.getCurrentUserId())
                 .stream()
                 .map(RoleSmallDto::getLevel)
                 .toList());
