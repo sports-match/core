@@ -1,6 +1,7 @@
 package com.srr.service;
 
 import com.srr.dto.PlayerAnswerDto;
+import me.zhengjie.utils.ExecutionResult;
 import me.zhengjie.utils.PageResult;
 import org.springframework.data.domain.Pageable;
 
@@ -49,19 +50,21 @@ public interface PlayerAnswerService {
      * @param resources PlayerAnswerDto object
      * @return Created PlayerAnswerDto
      */
-    PlayerAnswerDto create(PlayerAnswerDto resources);
+    ExecutionResult create(PlayerAnswerDto resources);
     
     /**
      * Update a player answer
-     * @param resources PlayerAnswerDto object with updated information
+     * @param resources PlayerAnswerDto with updated information
+     * @return ExecutionResult containing the updated entity ID
      */
-    void update(PlayerAnswerDto resources);
-    
+    ExecutionResult update(PlayerAnswerDto resources);
+
     /**
-     * Delete a player answer by ID
-     * @param id PlayerAnswer ID
+     * Delete a player answer
+     * @param id Player answer ID
+     * @return ExecutionResult containing the deleted entity ID
      */
-    void delete(Long id);
+    ExecutionResult delete(Long id);
     
     /**
      * Get a player answer by ID

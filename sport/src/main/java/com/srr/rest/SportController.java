@@ -31,7 +31,10 @@ import io.swagger.annotations.*;
 import java.io.IOException;
 import javax.servlet.http.HttpServletResponse;
 import me.zhengjie.utils.PageResult;
+import me.zhengjie.utils.ExecutionResult;
 import com.srr.dto.SportDto;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
 * @website https://eladmin.vip
@@ -40,8 +43,8 @@ import com.srr.dto.SportDto;
 **/
 @RestController
 @RequiredArgsConstructor
-@Api(tags = "sport")
-@RequestMapping("/api/sport")
+@Api(tags = "Sport Management")
+@RequestMapping("/api/sports")
 public class SportController {
 
     private final SportService sportService;
@@ -52,13 +55,6 @@ public class SportController {
         return "pong";
     }
 
-    @ApiOperation("Export Data")
-    @GetMapping(value = "/download")
-    @PreAuthorize("@el.check('sport:list')")
-    public void exportSport(HttpServletResponse response, SportQueryCriteria criteria) throws IOException {
-        sportService.download(sportService.queryAll(criteria), response);
-    }
-
     @GetMapping
     @ApiOperation("Query sport")
     @PreAuthorize("@el.check('sport:list')")
@@ -66,30 +62,37 @@ public class SportController {
         return new ResponseEntity<>(sportService.queryAll(criteria,pageable),HttpStatus.OK);
     }
 
+    @GetMapping("/{id}")
+    @ApiOperation("Get sport by ID")
+    @PreAuthorize("@el.check('sport:list')")
+    public ResponseEntity<SportDto> getById(@PathVariable Long id) {
+        return new ResponseEntity<>(sportService.findById(id), HttpStatus.OK);
+    }
+
     @PostMapping
     @Log("Add sport")
     @ApiOperation("Add sport")
     @PreAuthorize("@el.check('sport:add')")
     public ResponseEntity<Object> createSport(@Validated @RequestBody Sport resources){
-        sportService.create(resources);
-        return new ResponseEntity<>(HttpStatus.CREATED);
+        ExecutionResult result = sportService.create(resources);
+        return new ResponseEntity<>(result.toMap(), HttpStatus.CREATED);
     }
 
     @PutMapping
-    @Log("Edit sport")
-    @ApiOperation("Edit sport")
+    @Log("Modify sport")
+    @ApiOperation("Modify sport")
     @PreAuthorize("@el.check('sport:edit')")
     public ResponseEntity<Object> updateSport(@Validated @RequestBody Sport resources){
-        sportService.update(resources);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        ExecutionResult result = sportService.update(resources);
+        return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
     }
 
     @DeleteMapping
     @Log("Delete sport")
     @ApiOperation("Delete sport")
     @PreAuthorize("@el.check('sport:del')")
-    public ResponseEntity<Object> deleteSport(@ApiParam(value = "Pass ID array []") @RequestBody Long[] ids) {
-        sportService.deleteAll(ids);
-        return new ResponseEntity<>(HttpStatus.OK);
+    public ResponseEntity<Object> deleteSport(@RequestBody Long[] ids) {
+        ExecutionResult result = sportService.deleteAll(ids);
+        return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
     }
 }

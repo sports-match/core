@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequiredArgsConstructor
 @Api(tags = "Match Management")
-@RequestMapping("/api/match")
+@RequestMapping("/api/matches")
 public class MatchController {
 
     private final MatchService matchService;

@@ -51,26 +51,26 @@ import java.util.Map;
  **/
 @RestController
 @RequiredArgsConstructor
-@Api(tags = "event")
-@RequestMapping("/api/event")
+@Api(tags = "Event Management")
+@RequestMapping("/api/events")
 public class EventController {
 
     private final EventService eventService;
     private final TeamPlayerService teamPlayerService;
     private final MatchGroupService matchGroupService;
 
-    @ApiOperation("Export Data")
-    @GetMapping(value = "/download")
-    @PreAuthorize("@el.check('event:list')")
-    public void exportEvent(HttpServletResponse response, EventQueryCriteria criteria) throws IOException {
-        eventService.download(eventService.queryAll(criteria), response);
-    }
-
     @GetMapping
     @ApiOperation("Query event")
     @PreAuthorize("@el.check('event:list')")
     public ResponseEntity<PageResult<EventDto>> queryEvent(EventQueryCriteria criteria, Pageable pageable) {
         return new ResponseEntity<>(eventService.queryAll(criteria, pageable), HttpStatus.OK);
+    }
+
+    @GetMapping("/{id}")
+    @ApiOperation("Get event by ID")
+    @PreAuthorize("@el.check('event:list')")
+    public ResponseEntity<EventDto> getById(@PathVariable Long id) {
+        return new ResponseEntity<>(eventService.findById(id), HttpStatus.OK);
     }
 
     @PostMapping

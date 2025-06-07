@@ -16,8 +16,7 @@
 package com.srr.service.impl;
 
 import com.srr.domain.Court;
-import me.zhengjie.utils.ValidationUtil;
-import me.zhengjie.utils.FileUtil;
+import me.zhengjie.utils.*;
 import lombok.RequiredArgsConstructor;
 import com.srr.repository.CourtRepository;
 import com.srr.service.CourtService;
@@ -28,15 +27,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import me.zhengjie.utils.PageUtil;
-import me.zhengjie.utils.QueryHelp;
+
 import java.util.List;
 import java.util.Map;
 import java.io.IOException;
 import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import me.zhengjie.utils.PageResult;
 
 /**
 * @website https://eladmin.vip
@@ -72,25 +69,28 @@ public class CourtServiceImpl implements CourtService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void create(Court resources) {
-        courtRepository.save(resources);
+    public ExecutionResult create(Court resources) {
+        Court savedCourt = courtRepository.save(resources);
+        return ExecutionResult.of(savedCourt.getId());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void update(Court resources) {
+    public ExecutionResult update(Court resources) {
         Court court = courtRepository.findById(resources.getId()).orElseGet(Court::new);
         ValidationUtil.isNull( court.getId(),"Court","id",resources.getId());
         court.copy(resources);
-        courtRepository.save(court);
+        Court savedCourt = courtRepository.save(court);
+        return ExecutionResult.of(savedCourt.getId());
     }
 
     @Override
     @Transactional
-    public void deleteAll(Long[] ids) {
+    public ExecutionResult deleteAll(Long[] ids) {
         for (Long id : ids) {
             courtRepository.deleteById(id);
         }
+        return ExecutionResult.of(null, Map.of("count", ids.length, "ids", ids));
     }
 
     @Override

@@ -15,24 +15,19 @@
  */
 package com.srr.service.impl;
 
-import com.srr.domain.Event;
-import com.srr.domain.Player;
-import com.srr.domain.Team;
-import com.srr.domain.TeamPlayer;
+import com.srr.domain.*;
 import com.srr.enumeration.EventStatus;
 import com.srr.enumeration.Format;
+import com.srr.repository.*;
 import me.zhengjie.exception.EntityNotFoundException;
 import me.zhengjie.utils.ValidationUtil;
 import me.zhengjie.utils.FileUtil;
 import lombok.RequiredArgsConstructor;
-import com.srr.repository.EventRepository;
 import com.srr.service.EventService;
 import com.srr.dto.EventDto;
 import com.srr.dto.EventQueryCriteria;
 import com.srr.dto.mapstruct.EventMapper;
 import com.srr.dto.JoinEventDto;
-import com.srr.repository.TeamPlayerRepository;
-import com.srr.repository.TeamRepository;
 import me.zhengjie.exception.BadRequestException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +35,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import me.zhengjie.utils.PageUtil;
 import me.zhengjie.utils.QueryHelp;
+import me.zhengjie.utils.ExecutionResult;
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -66,6 +62,9 @@ public class EventServiceImpl implements EventService {
     private final EventMapper eventMapper;
     private final TeamRepository teamRepository;
     private final TeamPlayerRepository teamPlayerRepository;
+    private final MatchGroupRepository matchGroupRepository;
+    private final MatchRepository matchRepository;
+    private final WaitListRepository waitListRepository;
 
     @Override
     public PageResult<EventDto> queryAll(EventQueryCriteria criteria, Pageable pageable) {
@@ -219,10 +218,39 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional
-    public void deleteAll(Long[] ids) {
+    public ExecutionResult deleteAll(Long[] ids) {
         for (Long id : ids) {
+            // Get the event to check if it exists
+            Event event = eventRepository.findById(id)
+                    .orElseThrow(() -> new EntityNotFoundException(Event.class, "id", id.toString()));
+                    
+            // Delete match groups and matches for this event
+            List<MatchGroup> matchGroups = matchGroupRepository.findAllByEventId(id);
+            for (MatchGroup matchGroup : matchGroups) {
+                // Delete all matches in this group
+                List<Match> matches = matchRepository.findAllByMatchGroupId(matchGroup.getId());
+                matchRepository.deleteAll(matches);
+            }
+            matchGroupRepository.deleteAll(matchGroups);
+            
+            // Delete teams and team players for this event
+            List<Team> teams = teamRepository.findAllByEventId(id);
+            for (Team team : teams) {
+                // Delete all team players in this team
+                List<TeamPlayer> teamPlayers = teamPlayerRepository.findAllByTeamId(team.getId());
+                teamPlayerRepository.deleteAll(teamPlayers);
+            }
+            teamRepository.deleteAll(teams);
+            
+            // Delete wait list entries for this event
+            List<WaitList> waitListEntries = waitListRepository.findAllByEventId(id);
+            waitListRepository.deleteAll(waitListEntries);
+            
+            // Delete the event
             eventRepository.deleteById(id);
         }
+        
+        return ExecutionResult.of(null, Map.of("count", ids.length, "ids", ids));
     }
 
     @Override

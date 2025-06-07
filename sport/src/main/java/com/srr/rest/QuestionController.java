@@ -5,6 +5,7 @@ import com.srr.service.QuestionService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import me.zhengjie.utils.ExecutionResult;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +13,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
 * @description Question controller for API endpoints
@@ -65,16 +68,16 @@ public class QuestionController {
     @ApiOperation("Update a question")
     @PutMapping
     @PreAuthorize("@el.check('question:edit')")
-    public ResponseEntity<Void> update(@Validated @RequestBody QuestionDto resources) {
-        questionService.update(resources);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    public ResponseEntity<Object> update(@Validated @RequestBody QuestionDto resources) {
+        ExecutionResult result = questionService.update(resources);
+        return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
     }
     
     @ApiOperation("Delete a question")
     @DeleteMapping("/{id}")
     @PreAuthorize("@el.check('question:del')")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        questionService.delete(id);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    public ResponseEntity<Object> delete(@PathVariable Long id) {
+        ExecutionResult result = questionService.delete(id);
+        return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
     }
 }

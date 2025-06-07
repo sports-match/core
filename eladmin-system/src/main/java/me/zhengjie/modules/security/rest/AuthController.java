@@ -16,6 +16,10 @@
 package me.zhengjie.modules.security.rest;
 
 import cn.hutool.core.util.IdUtil;
+import com.srr.domain.EventOrganizer;
+import com.srr.domain.Player;
+import com.srr.repository.EventOrganizerRepository;
+import com.srr.service.PlayerService;
 import com.wf.captcha.base.Captcha;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -25,27 +29,29 @@ import me.zhengjie.annotation.Log;
 import me.zhengjie.annotation.rest.AnonymousDeleteMapping;
 import me.zhengjie.annotation.rest.AnonymousGetMapping;
 import me.zhengjie.annotation.rest.AnonymousPostMapping;
-import me.zhengjie.config.properties.RsaProperties;
+import me.zhengjie.domain.vo.EmailVo;
 import me.zhengjie.exception.BadRequestException;
+import me.zhengjie.exception.EntityExistException;
+import me.zhengjie.exception.EntityNotFoundException;
 import me.zhengjie.modules.security.config.CaptchaConfig;
-import me.zhengjie.modules.security.config.enums.LoginCodeEnum;
 import me.zhengjie.modules.security.config.LoginProperties;
 import me.zhengjie.modules.security.config.SecurityProperties;
+import me.zhengjie.modules.security.config.enums.LoginCodeEnum;
 import me.zhengjie.modules.security.security.TokenProvider;
+import me.zhengjie.modules.security.service.OnlineUserService;
 import me.zhengjie.modules.security.service.UserDetailsServiceImpl;
 import me.zhengjie.modules.security.service.dto.AuthUserDto;
-import me.zhengjie.modules.security.service.dto.JwtUserDto;
-import me.zhengjie.modules.security.service.OnlineUserService;
 import me.zhengjie.modules.security.service.dto.EmailVerificationDto;
+import me.zhengjie.modules.security.service.dto.JwtUserDto;
 import me.zhengjie.modules.security.service.dto.UserRegisterDto;
+import me.zhengjie.modules.security.service.enums.UserType;
 import me.zhengjie.modules.system.domain.User;
 import me.zhengjie.modules.system.service.UserService;
 import me.zhengjie.modules.system.service.VerifyService;
-import me.zhengjie.domain.vo.EmailVo;
-import me.zhengjie.utils.RsaUtils;
+import me.zhengjie.service.EmailService;
+import me.zhengjie.utils.ExecutionResult;
 import me.zhengjie.utils.RedisUtils;
 import me.zhengjie.utils.SecurityUtils;
-import me.zhengjie.utils.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -55,8 +61,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -81,13 +90,16 @@ public class AuthController {
     private final UserDetailsServiceImpl userDetailsService;
     private final VerifyService verifyService;
     private final UserService userService;
-    
+    private final EmailService emailService;
+    private final PlayerService playerService;
+    private final EventOrganizerRepository eventOrganizerRepository;
+
     private final String REGISTER_KEY_PREFIX = "register:email:";
 
     @Log("用户登录")
     @ApiOperation("登录授权")
     @AnonymousPostMapping(value = "/login")
-    public ResponseEntity<Object> login(@Validated @RequestBody AuthUserDto authUser, HttpServletRequest request) throws Exception {
+    public ResponseEntity<Object> login(@Validated @RequestBody AuthUserDto authUser, HttpServletRequest request) {
         // 密码解密
 //        String password = RsaUtils.decryptByPrivateKey(RsaProperties.privateKey, authUser.getPassword());
         String password = authUser.getPassword();
@@ -112,7 +124,7 @@ public class AuthController {
         // 生成令牌
         String token = tokenProvider.createToken(jwtUser);
         // 返回 token 与 用户信息
-        Map<String, Object> authInfo = new HashMap<String, Object>(2) {{
+        Map<String, Object> authInfo = new HashMap<>(2) {{
             put("token", properties.getTokenStartWith() + token);
             put("user", jwtUser);
         }};
@@ -147,7 +159,7 @@ public class AuthController {
         // 保存
         redisUtils.set(uuid, captchaValue, captchaConfig.getExpiration(), TimeUnit.MINUTES);
         // 验证码信息
-        Map<String, Object> imgResult = new HashMap<String, Object>(2) {{
+        Map<String, Object> imgResult = new HashMap<>(2) {{
             put("img", captcha.toBase64());
             put("uuid", uuid);
         }};
@@ -160,22 +172,28 @@ public class AuthController {
         onlineUserService.logout(tokenProvider.getToken(request));
         return new ResponseEntity<>(HttpStatus.OK);
     }
-    
-    @ApiOperation("用户注册")
+
+    @ApiOperation("register user")
     @AnonymousPostMapping(value = "/register")
-    public ResponseEntity<Object> register(@Validated @RequestBody UserRegisterDto registerDto) {
-        // Check if username already exists
+    public ResponseEntity<Object> register(@Valid @RequestBody UserRegisterDto registerDto) {
         try {
-            userService.findByName(registerDto.getUsername());
-            throw new BadRequestException("用户名已存在");
-        } catch (Exception e) {
-            if (!(e instanceof BadRequestException && e.getMessage().contains("不存在"))) {
-                throw e;
+            // Check if user already exists
+            if (userService.findByName(registerDto.getUsername()) != null) {
+                throw new EntityExistException(User.class, "username", registerDto.getUsername());
             }
-            // Username doesn't exist, continue with registration
+
+            // Check if email is already used
+            if (userService.findByEmail(registerDto.getEmail()) != null) {
+                throw new EntityExistException(User.class, "email", registerDto.getEmail());
+            }
+        } catch (EntityNotFoundException ignored) {
+
         }
-        
-        // Create a new user with unverified email
+        if (registerDto.getUserType() == null) {
+            throw new BadRequestException("User type cannot be null");
+        }
+
+        // Create new user
         User user = new User();
         user.setUsername(registerDto.getUsername());
         user.setPassword(passwordEncoder.encode(registerDto.getPassword()));
@@ -184,38 +202,46 @@ public class AuthController {
         user.setPhone(registerDto.getPhone());
         user.setEnabled(false); // User is disabled until email is verified
         user.setEmailVerified(false);
-        
-        userService.create(user);
-        
-        // Send verification email
-        String key = REGISTER_KEY_PREFIX + registerDto.getEmail();
-        EmailVo emailVo = verifyService.sendEmail(registerDto.getEmail(), key);
-        
-        return new ResponseEntity<>(HttpStatus.CREATED);
+        user.setUserType(registerDto.getUserType()); // Save user type
+
+        ExecutionResult result = userService.create(user);
+
+        sendEmail(registerDto.getEmail());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("userId", result.id());
+        response.put("email", registerDto.getEmail());
+        response.put("username", registerDto.getUsername());
+        response.put("requireEmailVerification", true);
+        response.put("message", "Please check your email to verify your account");
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
-    
+
     @ApiOperation("验证邮箱")
     @AnonymousPostMapping(value = "/verify-email")
     public ResponseEntity<Object> verifyEmail(@Validated @RequestBody EmailVerificationDto verificationDto) {
         String key = REGISTER_KEY_PREFIX + verificationDto.getEmail();
-        
+
         // Validate OTP code
         verifyService.validated(key, verificationDto.getCode());
-        
+
         // Find user by email
         User user = userService.findByEmail(verificationDto.getEmail());
         if (user == null) {
             throw new BadRequestException("用户不存在");
         }
-        
+
         // Update user status
         user.setEmailVerified(true);
         user.setEnabled(true);
-        userService.updateEmailVerificationStatus(user);
-        
-        return new ResponseEntity<>(HttpStatus.OK);
+        ExecutionResult result = userService.updateEmailVerificationStatus(user);
+
+        // Create the appropriate entity based on user type
+        createUserTypeEntity(user);
+
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
-    
+
     @ApiOperation("重新发送验证邮件")
     @AnonymousPostMapping(value = "/resend-verification")
     public ResponseEntity<Object> resendVerification(@RequestParam String email) {
@@ -224,16 +250,97 @@ public class AuthController {
         if (user == null) {
             throw new BadRequestException("用户不存在");
         }
-        
+
         // Check if already verified
         if (user.getEmailVerified()) {
             throw new BadRequestException("邮箱已验证");
         }
-        
+
+        final var emailVo = sendEmail(email);
+
+        return new ResponseEntity<>(emailVo, HttpStatus.OK);
+    }
+
+    private EmailVo sendEmail(String email) {
         // Send verification email
-        String key = REGISTER_KEY_PREFIX + email;
-        EmailVo emailVo = verifyService.sendEmail(email, key);
-        
-        return new ResponseEntity<>(HttpStatus.OK);
+        EmailVo emailVo = verifyService.sendEmail(email, REGISTER_KEY_PREFIX);
+
+        final var config = emailService.find();
+
+        // Send email
+        emailService.send(emailVo, config);
+        return emailVo;
+    }
+
+    /**
+     * Creates the appropriate entity based on the user's type
+     *
+     * @param user The user to create entity for
+     */
+    private void createUserTypeEntity(User user) {
+        // Get user type from user entity
+        UserType userType = user.getUserType();
+
+        try {
+
+            switch (userType) {
+                case PLAYER:
+                    createPlayerEntity(user);
+                    break;
+                case ORGANIZER:
+                    createEventOrganizerEntity(user);
+                    break;
+                case ADMIN:
+                    // No entity to create for ADMIN
+                    break;
+            }
+        } catch (IllegalArgumentException e) {
+            // Invalid user type, log and ignore
+            log.error("Invalid user type: {}", userType, e);
+        }
+    }
+
+    /**
+     * Creates a Player entity for the given user
+     *
+     * @param user The user to create a Player for
+     */
+    private void createPlayerEntity(User user) {
+        // Check if player already exists
+        Player existingPlayer = playerService.findByUserId(user.getId());
+        if (existingPlayer != null) {
+            return; // Player already exists
+        }
+
+        // Create new player
+        Player player = new Player();
+        player.setName(user.getNickName());
+        player.setUserId(user.getId());
+        player.setRateScore(0D);
+        player.setDescription("Player created upon registration");
+
+        playerService.create(player);
+        log.info("Created player for user: {}", user.getUsername());
+    }
+
+    /**
+     * Creates an EventOrganizer entity for the given user
+     *
+     * @param user The user to create an EventOrganizer for
+     */
+    private void createEventOrganizerEntity(User user) {
+        // Check if event organizer already exists
+        List<EventOrganizer> existingOrganizers = eventOrganizerRepository.findByUserId(user.getId());
+        if (!existingOrganizers.isEmpty()) {
+            return; // Organizer already exists
+        }
+
+        // Create new event organizer
+        EventOrganizer organizer = new EventOrganizer();
+        organizer.setUserId(user.getId());
+        organizer.setDescription("Event organizer created upon registration");
+
+        eventOrganizerRepository.save(organizer);
+        log.info("Created event organizer for user: {}", user.getUsername());
     }
 }

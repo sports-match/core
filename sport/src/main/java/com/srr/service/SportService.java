@@ -18,12 +18,13 @@ package com.srr.service;
 import com.srr.domain.Sport;
 import com.srr.dto.SportDto;
 import com.srr.dto.SportQueryCriteria;
+import me.zhengjie.utils.ExecutionResult;
+import me.zhengjie.utils.PageResult;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.io.IOException;
 import javax.servlet.http.HttpServletResponse;
-import me.zhengjie.utils.PageResult;
 
 /**
 * @website https://eladmin.vip
@@ -58,20 +59,23 @@ public interface SportService {
     /**
     * Create
     * @param resources /
+    * @return ExecutionResult containing the created entity ID
     */
-    void create(Sport resources);
+    ExecutionResult create(Sport resources);
 
     /**
     * Edit
     * @param resources /
+    * @return ExecutionResult containing the updated entity ID
     */
-    void update(Sport resources);
+    ExecutionResult update(Sport resources);
 
     /**
     * Multi-select delete
     * @param ids /
+    * @return ExecutionResult containing the deleted IDs
     */
-    void deleteAll(Long[] ids);
+    ExecutionResult deleteAll(Long[] ids);
 
     /**
     * Export data

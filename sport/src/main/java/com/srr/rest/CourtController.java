@@ -30,7 +30,10 @@ import io.swagger.annotations.*;
 import java.io.IOException;
 import javax.servlet.http.HttpServletResponse;
 import me.zhengjie.utils.PageResult;
+import me.zhengjie.utils.ExecutionResult;
 import com.srr.dto.CourtDto;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
 * @website https://eladmin.vip
@@ -39,18 +42,11 @@ import com.srr.dto.CourtDto;
 **/
 @RestController
 @RequiredArgsConstructor
-@Api(tags = "court")
-@RequestMapping("/api/court")
+@Api(tags = "Court Management")
+@RequestMapping("/api/courts")
 public class CourtController {
 
     private final CourtService courtService;
-
-    @ApiOperation("Export Data")
-    @GetMapping(value = "/download")
-    @PreAuthorize("@el.check('court:list')")
-    public void exportCourt(HttpServletResponse response, CourtQueryCriteria criteria) throws IOException {
-        courtService.download(courtService.queryAll(criteria), response);
-    }
 
     @GetMapping
     @ApiOperation("Query court")
@@ -59,13 +55,20 @@ public class CourtController {
         return new ResponseEntity<>(courtService.queryAll(criteria,pageable),HttpStatus.OK);
     }
 
+    @GetMapping("/{id}")
+    @ApiOperation("Get court by ID")
+    @PreAuthorize("@el.check('court:list')")
+    public ResponseEntity<CourtDto> getById(@PathVariable Long id) {
+        return new ResponseEntity<>(courtService.findById(id), HttpStatus.OK);
+    }
+
     @PostMapping
     @Log("Add court")
     @ApiOperation("Add court")
     @PreAuthorize("@el.check('court:add')")
     public ResponseEntity<Object> createCourt(@Validated @RequestBody Court resources){
-        courtService.create(resources);
-        return new ResponseEntity<>(HttpStatus.CREATED);
+        ExecutionResult result = courtService.create(resources);
+        return new ResponseEntity<>(result.toMap(), HttpStatus.CREATED);
     }
 
     @PutMapping
@@ -73,16 +76,16 @@ public class CourtController {
     @ApiOperation("Modify court")
     @PreAuthorize("@el.check('court:edit')")
     public ResponseEntity<Object> updateCourt(@Validated @RequestBody Court resources){
-        courtService.update(resources);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        ExecutionResult result = courtService.update(resources);
+        return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
     }
 
     @DeleteMapping
     @Log("Delete court")
     @ApiOperation("Delete court")
     @PreAuthorize("@el.check('court:del')")
-    public ResponseEntity<Object> deleteCourt(@ApiParam(value = "Pass ID array[]") @RequestBody Long[] ids) {
-        courtService.deleteAll(ids);
-        return new ResponseEntity<>(HttpStatus.OK);
+    public ResponseEntity<Object> deleteCourt(@RequestBody Long[] ids) {
+        ExecutionResult result = courtService.deleteAll(ids);
+        return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
     }
 }
