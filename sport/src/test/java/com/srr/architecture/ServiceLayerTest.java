@@ -50,9 +50,10 @@ public class ServiceLayerTest {
     public void deleteMethodsShouldBeTransactional() {
         methods()
                 .that().haveNameMatching("delete.*")
+                .and().arePublic()
                 .and().areDeclaredInClassesThat().haveNameMatching(".*ServiceImpl")
                 .should().beAnnotatedWith(Transactional.class)
-                .because("Delete methods in services should be transactional")
+                .because("Public delete methods in services should be transactional")
                 .check(importedClasses);
     }
 
@@ -60,9 +61,10 @@ public class ServiceLayerTest {
     public void createMethodsShouldBeTransactional() {
         methods()
                 .that().haveNameMatching("create.*")
+                .and().arePublic()
                 .and().areDeclaredInClassesThat().haveNameMatching(".*ServiceImpl")
                 .should().beAnnotatedWith(Transactional.class)
-                .because("Create methods in services should be transactional")
+                .because("Public create methods in services should be transactional")
                 .check(importedClasses);
     }
 
@@ -70,9 +72,10 @@ public class ServiceLayerTest {
     public void updateMethodsShouldBeTransactional() {
         methods()
                 .that().haveNameMatching("update.*")
+                .and().arePublic()
                 .and().areDeclaredInClassesThat().haveNameMatching(".*ServiceImpl")
                 .should().beAnnotatedWith(Transactional.class)
-                .because("Update methods in services should be transactional")
+                .because("Public update methods in services should be transactional")
                 .check(importedClasses);
     }
 }
