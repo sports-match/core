@@ -8,6 +8,7 @@ import javax.persistence.*;
 import java.io.Serializable;
 
 @Entity
+@Table(name = "match")
 @Setter
 @Getter
 public class Match implements Serializable {
@@ -46,4 +47,8 @@ public class Match implements Serializable {
 
     @Column(name = "score_verified")
     private boolean scoreVerified;
+    
+    @Column(name = "match_order")
+    @ApiModelProperty(value = "Order in which this match should be played")
+    private int matchOrder;
 }

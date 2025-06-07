@@ -101,6 +101,13 @@ public class UserController {
         return new ResponseEntity<>(PageUtil.noData(),HttpStatus.OK);
     }
 
+    @ApiOperation("获取单个用户")
+    @GetMapping("/{id}")
+    @PreAuthorize("@el.check('user:list')")
+    public ResponseEntity<Object> getUser(@PathVariable Long id) {
+        return new ResponseEntity<>(userService.findById(id), HttpStatus.OK);
+    }
+
     @Log("新增用户")
     @ApiOperation("新增用户")
     @PostMapping

@@ -12,6 +12,7 @@ import java.util.List;
 @Getter
 @Setter
 @Entity
+@Table(name = "match_group")
 public class MatchGroup implements Serializable {
 
     @Id

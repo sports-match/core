@@ -36,7 +36,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @Api(tags = "Team Player Management")
-@RequestMapping("/api/team-player")
+@RequestMapping("/api/team-players")
 public class TeamPlayerController {
 
     private final TeamPlayerService teamPlayerService;

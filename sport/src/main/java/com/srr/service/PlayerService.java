@@ -18,6 +18,7 @@ package com.srr.service;
 import com.srr.domain.Player;
 import com.srr.dto.PlayerDto;
 import com.srr.dto.PlayerQueryCriteria;
+import me.zhengjie.utils.ExecutionResult;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
@@ -58,20 +59,23 @@ public interface PlayerService {
     /**
     * Create
     * @param resources /
+    * @return ExecutionResult containing the created entity ID
     */
-    void create(Player resources);
+    ExecutionResult create(Player resources);
 
     /**
     * Edit
     * @param resources /
+    * @return ExecutionResult containing the updated entity ID
     */
-    void update(Player resources);
+    ExecutionResult update(Player resources);
 
     /**
     * Multi-select delete
     * @param ids /
+    * @return ExecutionResult containing the deleted IDs
     */
-    void deleteAll(Long[] ids);
+    ExecutionResult deleteAll(Long[] ids);
 
     /**
     * Export data
@@ -80,4 +84,11 @@ public interface PlayerService {
     * @throws IOException /
     */
     void download(List<PlayerDto> all, HttpServletResponse response) throws IOException;
+
+    /**
+     * Find player by user ID
+     * @param userId the user ID
+     * @return Player entity if found, null otherwise
+     */
+    Player findByUserId(Long userId);
 }

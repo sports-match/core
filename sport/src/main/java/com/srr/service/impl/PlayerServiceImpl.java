@@ -24,6 +24,7 @@ import com.srr.service.PlayerService;
 import com.srr.dto.PlayerDto;
 import com.srr.dto.PlayerQueryCriteria;
 import com.srr.dto.mapstruct.PlayerMapper;
+import me.zhengjie.utils.ExecutionResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
@@ -39,7 +40,6 @@ import java.util.LinkedHashMap;
 import me.zhengjie.utils.PageResult;
 
 /**
-* @website https://eladmin.vip
 * @description 服务实现
 * @author Chanheng
 * @date 2025-05-18
@@ -72,24 +72,28 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void create(Player resources) {
-        playerRepository.save(resources);
+    public ExecutionResult create(Player resources) {
+        Player savedPlayer = playerRepository.save(resources);
+        return ExecutionResult.of(savedPlayer.getId());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void update(Player resources) {
+    public ExecutionResult update(Player resources) {
         Player player = playerRepository.findById(resources.getId()).orElseGet(Player::new);
         ValidationUtil.isNull( player.getId(),"Player","id",resources.getId());
         player.copy(resources);
-        playerRepository.save(player);
+        Player savedPlayer = playerRepository.save(player);
+        return ExecutionResult.of(savedPlayer.getId());
     }
 
     @Override
-    public void deleteAll(Long[] ids) {
+    @Transactional
+    public ExecutionResult deleteAll(Long[] ids) {
         for (Long id : ids) {
             playerRepository.deleteById(id);
         }
+        return ExecutionResult.of(null, Map.of("count", ids.length, "ids", ids));
     }
 
     @Override
@@ -109,5 +113,10 @@ public class PlayerServiceImpl implements PlayerService {
             list.add(map);
         }
         FileUtil.downloadExcel(list, response);
+    }
+
+    @Override
+    public Player findByUserId(Long userId) {
+        return playerRepository.findByUserId(userId);
     }
 }

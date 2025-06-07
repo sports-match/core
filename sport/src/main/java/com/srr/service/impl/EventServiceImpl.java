@@ -15,24 +15,19 @@
  */
 package com.srr.service.impl;
 
-import com.srr.domain.Event;
-import com.srr.domain.Player;
-import com.srr.domain.Team;
-import com.srr.domain.TeamPlayer;
+import com.srr.domain.*;
 import com.srr.enumeration.EventStatus;
 import com.srr.enumeration.Format;
+import com.srr.repository.*;
 import me.zhengjie.exception.EntityNotFoundException;
 import me.zhengjie.utils.ValidationUtil;
 import me.zhengjie.utils.FileUtil;
 import lombok.RequiredArgsConstructor;
-import com.srr.repository.EventRepository;
 import com.srr.service.EventService;
 import com.srr.dto.EventDto;
 import com.srr.dto.EventQueryCriteria;
 import com.srr.dto.mapstruct.EventMapper;
 import com.srr.dto.JoinEventDto;
-import com.srr.repository.TeamPlayerRepository;
-import com.srr.repository.TeamRepository;
 import me.zhengjie.exception.BadRequestException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +35,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import me.zhengjie.utils.PageUtil;
 import me.zhengjie.utils.QueryHelp;
+import me.zhengjie.utils.ExecutionResult;
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -66,6 +62,9 @@ public class EventServiceImpl implements EventService {
     private final EventMapper eventMapper;
     private final TeamRepository teamRepository;
     private final TeamPlayerRepository teamPlayerRepository;
+    private final MatchGroupRepository matchGroupRepository;
+    private final MatchRepository matchRepository;
+    private final WaitListRepository waitListRepository;
 
     @Override
     public PageResult<EventDto> queryAll(EventQueryCriteria criteria, Pageable pageable) {
@@ -108,7 +107,7 @@ public class EventServiceImpl implements EventService {
     @Transactional(rollbackFor = Exception.class)
     public EventDto updateStatus(Long id, EventStatus status) {
         Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(Event.class, "id", Long.valueOf(id)));
+                .orElseThrow(() -> new EntityNotFoundException(Event.class, "id", String.valueOf(id)));
 
         // Only update the status field
         event.setStatus(status);
@@ -125,7 +124,7 @@ public class EventServiceImpl implements EventService {
     public EventDto joinEvent(JoinEventDto joinEventDto) {
         // Find the event
         Event event = eventRepository.findById(joinEventDto.getEventId())
-                .orElseThrow(() -> new EntityNotFoundException(Event.class, "id", Long.valueOf(joinEventDto.getEventId())));
+                .orElseThrow(() -> new EntityNotFoundException(Event.class, "id", String.valueOf(joinEventDto.getEventId())));
         
         // Check if event allows joining
         if (event.getStatus() != EventStatus.OPEN) {
@@ -148,7 +147,7 @@ public class EventServiceImpl implements EventService {
         if (joinEventDto.getTeamId() != null) {
             // Add player to existing team
             Team team = teamRepository.findById(joinEventDto.getTeamId())
-                    .orElseThrow(() -> new EntityNotFoundException(Team.class, "id", Long.valueOf(joinEventDto.getTeamId())));
+                    .orElseThrow(() -> new EntityNotFoundException(Team.class, "id", String.valueOf(joinEventDto.getTeamId())));
             
             // Verify team belongs to this event
             if (!team.getEvent().getId().equals(event.getId())) {
@@ -161,7 +160,7 @@ public class EventServiceImpl implements EventService {
             }
             
             // Check if team is full
-            if (team.getTeamSize() == team.getTeamPlayers().size()) {
+            if (team.getTeamPlayers().size() >= team.getTeamSize()) {
                 throw new BadRequestException("Team is already full");
             }
             
@@ -173,49 +172,38 @@ public class EventServiceImpl implements EventService {
             teamPlayer.setPlayer(player);
             teamPlayer.setCheckedIn(false);
             teamPlayerRepository.save(teamPlayer);
+            
+            // Save team to ensure averageScore is updated
+            teamRepository.save(team);
         } else {
-            // Create new team for the player if needed or add as individual participant
+            // No teamId provided, so create a new team regardless of format
+            Team team = new Team();
+            team.setEvent(event);
+            
             if (event.getFormat() == Format.SINGLE) {
-                // For single format, create a "virtual" team with just one player
-                Team team = new Team();
-                team.setEvent(event);
                 team.setName("Player " + joinEventDto.getPlayerId());
                 team.setTeamSize(1);
-                Team savedTeam = teamRepository.save(team);
-                
-                // Add player to the team
-                TeamPlayer teamPlayer = new TeamPlayer();
-                teamPlayer.setTeam(savedTeam);
-                Player player = new Player();
-                player.setId(joinEventDto.getPlayerId());
-                teamPlayer.setPlayer(player);
-                teamPlayer.setCheckedIn(false);
-                teamPlayerRepository.save(teamPlayer);
-            } else if (event.getFormat() == Format.DOUBLE || event.getFormat() == Format.TEAM) {
-                // For doubles/team format, create a new team
-                Team team = new Team();
-                team.setEvent(event);
+            } else if (event.getFormat() == Format.DOUBLE) {
                 team.setName("New Team");
-                
-                // Set team size based on format
-                if (event.getFormat() == Format.DOUBLE) {
-                    team.setTeamSize(2);
-                } else {
-                    // Default team size of 4 for TEAM format, can be adjusted as needed
-                    team.setTeamSize(4);
-                }
-                
-                Team savedTeam = teamRepository.save(team);
-                
-                // Add player as the first member of the team
-                TeamPlayer teamPlayer = new TeamPlayer();
-                teamPlayer.setTeam(savedTeam);
-                Player player = new Player();
-                player.setId(joinEventDto.getPlayerId());
-                teamPlayer.setPlayer(player);
-                teamPlayer.setCheckedIn(false);
-                teamPlayerRepository.save(teamPlayer);
+                team.setTeamSize(2);
+            } else {
+                team.setName("New Team");
+                team.setTeamSize(4); // Default size for TEAM format
             }
+            
+            Team savedTeam = teamRepository.save(team);
+            
+            // Add player as the first member of the new team
+            TeamPlayer teamPlayer = new TeamPlayer();
+            teamPlayer.setTeam(savedTeam);
+            Player player = new Player();
+            player.setId(joinEventDto.getPlayerId());
+            teamPlayer.setPlayer(player);
+            teamPlayer.setCheckedIn(false);
+            teamPlayerRepository.save(teamPlayer);
+            
+            // Save team again to ensure averageScore is updated
+            teamRepository.save(savedTeam);
         }
         
         // Update participant count if not joining waitlist
@@ -229,10 +217,40 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public void deleteAll(Long[] ids) {
+    @Transactional
+    public ExecutionResult deleteAll(Long[] ids) {
         for (Long id : ids) {
+            // Get the event to check if it exists
+            Event event = eventRepository.findById(id)
+                    .orElseThrow(() -> new EntityNotFoundException(Event.class, "id", id.toString()));
+                    
+            // Delete match groups and matches for this event
+            List<MatchGroup> matchGroups = matchGroupRepository.findAllByEventId(id);
+            for (MatchGroup matchGroup : matchGroups) {
+                // Delete all matches in this group
+                List<Match> matches = matchRepository.findAllByMatchGroupId(matchGroup.getId());
+                matchRepository.deleteAll(matches);
+            }
+            matchGroupRepository.deleteAll(matchGroups);
+            
+            // Delete teams and team players for this event
+            List<Team> teams = teamRepository.findAllByEventId(id);
+            for (Team team : teams) {
+                // Delete all team players in this team
+                List<TeamPlayer> teamPlayers = teamPlayerRepository.findAllByTeamId(team.getId());
+                teamPlayerRepository.deleteAll(teamPlayers);
+            }
+            teamRepository.deleteAll(teams);
+            
+            // Delete wait list entries for this event
+            List<WaitList> waitListEntries = waitListRepository.findAllByEventId(id);
+            waitListRepository.deleteAll(waitListEntries);
+            
+            // Delete the event
             eventRepository.deleteById(id);
         }
+        
+        return ExecutionResult.of(null, Map.of("count", ids.length, "ids", ids));
     }
 
     @Override

@@ -15,42 +15,34 @@
 */
 package com.srr.rest;
 
-import me.zhengjie.annotation.Log;
 import com.srr.domain.Player;
-import com.srr.service.PlayerService;
+import com.srr.dto.PlayerDto;
 import com.srr.dto.PlayerQueryCriteria;
-import org.springframework.data.domain.Pageable;
+import com.srr.service.PlayerService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import me.zhengjie.annotation.Log;
+import me.zhengjie.utils.ExecutionResult;
+import me.zhengjie.utils.PageResult;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import io.swagger.annotations.*;
-import java.io.IOException;
-import javax.servlet.http.HttpServletResponse;
-import me.zhengjie.utils.PageResult;
-import com.srr.dto.PlayerDto;
 
 /**
-* @website https://eladmin.vip
 * @author Chanheng
 * @date 2025-05-18
 **/
 @RestController
 @RequiredArgsConstructor
-@Api(tags = "player")
-@RequestMapping("/api/player")
+@Api(tags = "Player Management")
+@RequestMapping("/api/players")
 public class PlayerController {
 
     private final PlayerService playerService;
-
-    @ApiOperation("Export Data")
-    @GetMapping(value = "/download")
-    @PreAuthorize("@el.check('player:list')")
-    public void exportPlayer(HttpServletResponse response, PlayerQueryCriteria criteria) throws IOException {
-        playerService.download(playerService.queryAll(criteria), response);
-    }
 
     @GetMapping
     @ApiOperation("Query sport")
@@ -59,30 +51,19 @@ public class PlayerController {
         return new ResponseEntity<>(playerService.queryAll(criteria,pageable),HttpStatus.OK);
     }
 
-    @PostMapping
-    @Log("Add sport")
-    @ApiOperation("Add sport")
-    @PreAuthorize("@el.check('player:add')")
-    public ResponseEntity<Object> createPlayer(@Validated @RequestBody Player resources){
-        playerService.create(resources);
-        return new ResponseEntity<>(HttpStatus.CREATED);
+    @GetMapping("/{id}")
+    @ApiOperation("Get player by ID")
+    @PreAuthorize("@el.check('player:list')")
+    public ResponseEntity<PlayerDto> getById(@PathVariable Long id) {
+        return new ResponseEntity<>(playerService.findById(id), HttpStatus.OK);
     }
 
     @PutMapping
-    @Log("Edit sport")
-    @ApiOperation("Edit sport")
+    @Log("Edit player")
+    @ApiOperation("Edit player")
     @PreAuthorize("@el.check('player:edit')")
     public ResponseEntity<Object> updatePlayer(@Validated @RequestBody Player resources){
-        playerService.update(resources);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-    }
-
-    @DeleteMapping
-    @Log("Delete sport")
-    @ApiOperation("Delete sport")
-    @PreAuthorize("@el.check('player:del')")
-    public ResponseEntity<Object> deletePlayer(@ApiParam(value = "Pass ID array []") @RequestBody Long[] ids) {
-        playerService.deleteAll(ids);
-        return new ResponseEntity<>(HttpStatus.OK);
+        ExecutionResult result = playerService.update(resources);
+        return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
     }
 }

@@ -31,7 +31,10 @@ import io.swagger.annotations.*;
 import java.io.IOException;
 import javax.servlet.http.HttpServletResponse;
 import me.zhengjie.utils.PageResult;
+import me.zhengjie.utils.ExecutionResult;
 import com.srr.dto.ClubDto;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
 * @website https://eladmin.vip
@@ -40,19 +43,12 @@ import com.srr.dto.ClubDto;
 **/
 @RestController
 @RequiredArgsConstructor
-@Api(tags = "clubs")
+@Api(tags = "Club Management")
 @Slf4j
-@RequestMapping("/api/club")
+@RequestMapping("/api/clubs")
 public class ClubController {
 
     private final ClubService clubService;
-
-    @ApiOperation("Export Data")
-    @GetMapping(value = "/download")
-    @PreAuthorize("@el.check('club:list')")
-    public void exportClub(HttpServletResponse response, ClubQueryCriteria criteria) throws IOException {
-        clubService.download(clubService.queryAll(criteria), response);
-    }
 
     @GetMapping
     @ApiOperation("Query clubs")
@@ -61,31 +57,37 @@ public class ClubController {
         return new ResponseEntity<>(clubService.queryAll(criteria,pageable),HttpStatus.OK);
     }
 
+    @GetMapping("/{id}")
+    @ApiOperation("Get club by ID")
+    @PreAuthorize("@el.check('club:list')")
+    public ResponseEntity<ClubDto> getById(@PathVariable Long id) {
+        return new ResponseEntity<>(clubService.findById(id), HttpStatus.OK);
+    }
+
     @PostMapping
     @Log("Add clubs")
     @ApiOperation("Add clubs")
     @PreAuthorize("@el.check('club:add')")
     public ResponseEntity<Object> createClub(@Validated @RequestBody Club resources){
-        log.info("createClub");
-        clubService.create(resources);
-        return new ResponseEntity<>(HttpStatus.CREATED);
+        ExecutionResult result = clubService.create(resources);
+        return new ResponseEntity<>(result.toMap(), HttpStatus.CREATED);
     }
 
     @PutMapping
-    @Log("Edit clubs")
-    @ApiOperation("Edit clubs")
+    @Log("Modify clubs")
+    @ApiOperation("Modify clubs")
     @PreAuthorize("@el.check('club:edit')")
     public ResponseEntity<Object> updateClub(@Validated @RequestBody Club resources){
-        clubService.update(resources);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        ExecutionResult result = clubService.update(resources);
+        return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
     }
 
     @DeleteMapping
     @Log("Delete clubs")
     @ApiOperation("Delete clubs")
     @PreAuthorize("@el.check('club:del')")
-    public ResponseEntity<Object> deleteClub(@ApiParam(value = "Pass ID array []") @RequestBody Long[] ids) {
-        clubService.deleteAll(ids);
-        return new ResponseEntity<>(HttpStatus.OK);
+    public ResponseEntity<Object> deleteClub(@RequestBody Long[] ids) {
+        ExecutionResult result = clubService.deleteAll(ids);
+        return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
     }
 }

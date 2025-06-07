@@ -19,10 +19,17 @@ import com.srr.domain.MatchGroup;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
+import java.util.List;
+
 /**
-* @website https://eladmin.vip
 * @author Chanheng
 * @date 2025-05-25
 **/
 public interface MatchGroupRepository extends JpaRepository<MatchGroup, Long>, JpaSpecificationExecutor<MatchGroup> {
+    /**
+     * Find all match groups for a specific event
+     * @param eventId The event ID
+     * @return List of match groups
+     */
+    List<MatchGroup> findAllByEventId(Long eventId);
 }

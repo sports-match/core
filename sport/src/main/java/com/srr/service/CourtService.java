@@ -18,12 +18,13 @@ package com.srr.service;
 import com.srr.domain.Court;
 import com.srr.dto.CourtDto;
 import com.srr.dto.CourtQueryCriteria;
+import me.zhengjie.utils.ExecutionResult;
+import me.zhengjie.utils.PageResult;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.io.IOException;
 import javax.servlet.http.HttpServletResponse;
-import me.zhengjie.utils.PageResult;
 
 /**
 * @website https://eladmin.vip
@@ -58,20 +59,23 @@ public interface CourtService {
     /**
     * Create
     * @param resources /
+    * @return ExecutionResult containing the created entity ID
     */
-    void create(Court resources);
+    ExecutionResult create(Court resources);
 
     /**
     * Edit
     * @param resources /
+    * @return ExecutionResult containing the updated entity ID
     */
-    void update(Court resources);
+    ExecutionResult update(Court resources);
 
     /**
     * Multi-select delete
     * @param ids /
+    * @return ExecutionResult containing the deleted IDs
     */
-    void deleteAll(Long[] ids);
+    ExecutionResult deleteAll(Long[] ids);
 
     /**
     * Export data

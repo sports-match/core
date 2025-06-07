@@ -19,6 +19,8 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
 import me.zhengjie.base.BaseEntity;
+import me.zhengjie.modules.security.service.enums.UserType;
+
 import javax.persistence.*;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
@@ -97,6 +99,15 @@ public class User extends BaseEntity implements Serializable {
     @Column(name = "pwd_reset_time")
     @ApiModelProperty(value = "最后修改密码的时间", hidden = true)
     private Date pwdResetTime;
+
+    @Column(name = "email_verified")
+    @ApiModelProperty(value = "邮箱是否已验证")
+    private Boolean emailVerified = false;
+
+    @Column(name = "user_type")
+    @ApiModelProperty(value = "用户类型 (PLAYER, ORGANIZER, ADMIN)")
+    @Enumerated(EnumType.STRING)
+    private UserType userType = UserType.ADMIN;
 
     @Override
     public boolean equals(Object o) {
