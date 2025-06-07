@@ -33,7 +33,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 /**
-* @website https://eladmin.vip
 * @author Chanheng
 * @date 2025-05-18
 **/
@@ -59,30 +58,12 @@ public class PlayerController {
         return new ResponseEntity<>(playerService.findById(id), HttpStatus.OK);
     }
 
-    @PostMapping
-    @Log("Add player")
-    @ApiOperation("Add player")
-    @PreAuthorize("@el.check('player:add')")
-    public ResponseEntity<Object> createPlayer(@Validated @RequestBody Player resources){
-        ExecutionResult result = playerService.create(resources);
-        return new ResponseEntity<>(result.toMap(), HttpStatus.CREATED);
-    }
-
     @PutMapping
-    @Log("Edit sport")
-    @ApiOperation("Edit sport")
+    @Log("Edit player")
+    @ApiOperation("Edit player")
     @PreAuthorize("@el.check('player:edit')")
     public ResponseEntity<Object> updatePlayer(@Validated @RequestBody Player resources){
         ExecutionResult result = playerService.update(resources);
-        return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
-    }
-
-    @DeleteMapping
-    @Log("Delete player")
-    @ApiOperation("Delete player")
-    @PreAuthorize("@el.check('player:del')")
-    public ResponseEntity<Object> deletePlayer(@RequestBody Long[] ids) {
-        ExecutionResult result = playerService.deleteAll(ids);
         return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
     }
 }

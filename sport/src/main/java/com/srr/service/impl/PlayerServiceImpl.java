@@ -40,7 +40,6 @@ import java.util.LinkedHashMap;
 import me.zhengjie.utils.PageResult;
 
 /**
-* @website https://eladmin.vip
 * @description 服务实现
 * @author Chanheng
 * @date 2025-05-18
@@ -114,5 +113,10 @@ public class PlayerServiceImpl implements PlayerService {
             list.add(map);
         }
         FileUtil.downloadExcel(list, response);
+    }
+
+    @Override
+    public Player findByUserId(Long userId) {
+        return playerRepository.findByUserId(userId);
     }
 }

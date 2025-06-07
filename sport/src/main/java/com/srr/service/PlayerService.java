@@ -84,4 +84,11 @@ public interface PlayerService {
     * @throws IOException /
     */
     void download(List<PlayerDto> all, HttpServletResponse response) throws IOException;
+
+    /**
+     * Find player by user ID
+     * @param userId the user ID
+     * @return Player entity if found, null otherwise
+     */
+    Player findByUserId(Long userId);
 }
