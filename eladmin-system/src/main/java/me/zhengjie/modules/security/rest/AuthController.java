@@ -173,9 +173,9 @@ public class AuthController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    @ApiOperation("用户注册")
+    @ApiOperation("register user")
     @AnonymousPostMapping(value = "/register")
-    public ResponseEntity<Object> register(@Valid @Validated @RequestBody UserRegisterDto registerDto) {
+    public ResponseEntity<Object> register(@Valid @RequestBody UserRegisterDto registerDto) {
         try {
             // Check if user already exists
             if (userService.findByName(registerDto.getUsername()) != null) {
@@ -188,6 +188,9 @@ public class AuthController {
             }
         } catch (EntityNotFoundException ignored) {
 
+        }
+        if (registerDto.getUserType() == null) {
+            throw new BadRequestException("User type cannot be null");
         }
 
         // Create new user
@@ -313,6 +316,7 @@ public class AuthController {
         Player player = new Player();
         player.setName(user.getNickName());
         player.setUserId(user.getId());
+        player.setRateScore(0D);
         player.setDescription("Player created upon registration");
 
         playerService.create(player);

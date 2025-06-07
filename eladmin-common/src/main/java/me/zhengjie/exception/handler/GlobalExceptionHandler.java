@@ -56,7 +56,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> badCredentialsException(BadCredentialsException e) {
         // 打印堆栈信息
         String message = "坏的凭证".equals(e.getMessage()) ? "用户名或密码不正确" : e.getMessage();
-        log.error(message);
+        log.warn(message);
         return buildResponseEntity(ApiError.error(message));
     }
 
@@ -66,7 +66,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = BadRequestException.class)
     public ResponseEntity<ApiError> badRequestException(BadRequestException e) {
         // 打印堆栈信息
-        log.error(ThrowableUtil.getStackTrace(e));
+        log.warn(ThrowableUtil.getStackTrace(e));
         return buildResponseEntity(ApiError.error(e.getStatus(), e.getMessage()));
     }
 
@@ -86,7 +86,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = EntityNotFoundException.class)
     public ResponseEntity<ApiError> entityNotFoundException(EntityNotFoundException e) {
         // 打印堆栈信息
-        log.error(ThrowableUtil.getStackTrace(e));
+        log.warn(ThrowableUtil.getStackTrace(e));
         return buildResponseEntity(ApiError.error(NOT_FOUND.value(), e.getMessage()));
     }
 
@@ -96,7 +96,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
         // 打印堆栈信息
-        log.error(ThrowableUtil.getStackTrace(e));
+        log.warn(ThrowableUtil.getStackTrace(e));
         ObjectError objectError = e.getBindingResult().getAllErrors().get(0);
         String message = objectError.getDefaultMessage();
         if (objectError instanceof FieldError) {
