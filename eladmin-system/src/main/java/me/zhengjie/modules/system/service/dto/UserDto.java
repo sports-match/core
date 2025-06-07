@@ -20,6 +20,8 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
 import me.zhengjie.base.BaseDTO;
+import me.zhengjie.modules.security.service.enums.UserType;
+
 import java.io.Serializable;
 import java.util.Date;
 import java.util.Set;
@@ -77,4 +79,7 @@ public class UserDto extends BaseDTO implements Serializable {
 
     @ApiModelProperty(value = "密码重置时间")
     private Date pwdResetTime;
+    
+    @ApiModelProperty(value = "用户类型 (PLAYER, ORGANIZER, ADMIN)")
+    private UserType userType;
 }
