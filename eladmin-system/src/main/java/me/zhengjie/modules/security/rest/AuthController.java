@@ -42,6 +42,7 @@ import me.zhengjie.modules.security.service.dto.UserRegisterDto;
 import me.zhengjie.modules.system.domain.User;
 import me.zhengjie.modules.system.service.UserService;
 import me.zhengjie.modules.system.service.VerifyService;
+import me.zhengjie.service.EmailService;
 import me.zhengjie.utils.ExecutionResult;
 import me.zhengjie.utils.RedisUtils;
 import me.zhengjie.utils.SecurityUtils;
@@ -81,6 +82,7 @@ public class AuthController {
     private final UserDetailsServiceImpl userDetailsService;
     private final VerifyService verifyService;
     private final UserService userService;
+    private final EmailService emailService;
 
     private final String REGISTER_KEY_PREFIX = "register:email:";
 
@@ -186,12 +188,14 @@ public class AuthController {
 
         ExecutionResult result = userService.create(user);
 
-        // Send verification email
-        String key = REGISTER_KEY_PREFIX + registerDto.getEmail();
-        verifyService.sendEmail(registerDto.getEmail(), key);
+        sendEmail(registerDto.getEmail());
 
         Map<String, Object> response = new HashMap<>();
-        response.put("userId", result.id()); 
+        response.put("userId", result.id());
+        response.put("email", registerDto.getEmail());
+        response.put("username", registerDto.getUsername());
+        response.put("requireEmailVerification", true);
+        response.put("message", "Please check your email to verify your account");
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -231,10 +235,19 @@ public class AuthController {
             throw new BadRequestException("邮箱已验证");
         }
 
-        // Send verification email
-        String key = REGISTER_KEY_PREFIX + email;
-        EmailVo emailVo = verifyService.sendEmail(email, key);
+        final var emailVo = sendEmail(email);
 
         return new ResponseEntity<>(emailVo, HttpStatus.OK);
+    }
+
+    private EmailVo sendEmail(String email) {
+        // Send verification email
+        EmailVo emailVo = verifyService.sendEmail(email, REGISTER_KEY_PREFIX);
+
+        final var config = emailService.find();
+
+        // Send email
+        emailService.send(emailVo, config);
+        return emailVo;
     }
 }
