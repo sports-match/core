@@ -70,6 +70,7 @@ public class PlayerController {
     
     @GetMapping("/assessment-status")
     @ApiOperation("Check if player has completed self-assessment")
+    @PreAuthorize("@el.check('player:list')")
     public ResponseEntity<PlayerAssessmentStatusDto> checkAssessmentStatus() {
         PlayerAssessmentStatusDto status = playerService.checkAssessmentStatus();
         return new ResponseEntity<>(status, HttpStatus.OK);
