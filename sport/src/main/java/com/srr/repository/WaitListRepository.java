@@ -4,8 +4,6 @@ import com.srr.domain.WaitList;
 import com.srr.enumeration.WaitListStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -35,14 +33,7 @@ public interface WaitListRepository extends JpaRepository<WaitList, Long>, JpaSp
      * @return List of wait list entries
      */
     List<WaitList> findByPlayerId(Long playerId);
-    
-    /**
-     * Find all wait list entries for a player by user ID
-     * @param userId User's ID
-     * @return List of wait list entries
-     */
-    @Query("SELECT wl FROM WaitList wl JOIN wl.player p WHERE p.userId = :userId")
-    List<WaitList> findByUserId(@Param("userId") Long userId);
+
 
     /**
      * Delete all wait list entries for a specific event.
