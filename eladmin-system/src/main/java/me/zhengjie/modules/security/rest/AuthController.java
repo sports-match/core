@@ -19,7 +19,7 @@ import cn.hutool.core.util.IdUtil;
 import com.srr.domain.EventOrganizer;
 import com.srr.domain.Player;
 import com.srr.dto.PlayerAssessmentStatusDto;
-import com.srr.repository.EventOrganizerRepository;
+import com.srr.service.EventOrganizerService;
 import com.srr.service.PlayerService;
 import com.wf.captcha.base.Captcha;
 import io.swagger.annotations.Api;
@@ -46,7 +46,9 @@ import me.zhengjie.modules.security.service.dto.EmailVerificationDto;
 import me.zhengjie.modules.security.service.dto.JwtUserDto;
 import me.zhengjie.modules.security.service.dto.UserRegisterDto;
 import me.zhengjie.modules.security.service.enums.UserType;
+import me.zhengjie.modules.system.domain.Role;
 import me.zhengjie.modules.system.domain.User;
+import me.zhengjie.modules.system.repository.RoleRepository;
 import me.zhengjie.modules.system.service.UserService;
 import me.zhengjie.modules.system.service.VerifyService;
 import me.zhengjie.service.EmailService;
@@ -66,8 +68,9 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -93,7 +96,8 @@ public class AuthController {
     private final UserService userService;
     private final EmailService emailService;
     private final PlayerService playerService;
-    private final EventOrganizerRepository eventOrganizerRepository;
+    private final EventOrganizerService eventOrganizerService;
+    private final RoleRepository roleRepository;
 
     private final String REGISTER_KEY_PREFIX = "register:email:";
 
@@ -301,12 +305,15 @@ public class AuthController {
         UserType userType = user.getUserType();
 
         try {
-
             switch (userType) {
                 case PLAYER:
+                    // Assign Player role to the user
+                    assignRoleToUser(user, "Player");
                     createPlayerEntity(user);
                     break;
                 case ORGANIZER:
+                    // Assign Organizer role to the user
+                    assignRoleToUser(user, "Organizer");
                     createEventOrganizerEntity(user);
                     break;
                 case ADMIN:
@@ -320,24 +327,56 @@ public class AuthController {
     }
 
     /**
+     * Assigns a role to a user by role name
+     *
+     * @param user     The user to assign the role to
+     * @param roleName The name of the role to assign
+     */
+    private void assignRoleToUser(User user, String roleName) {
+        try {
+            final Role role = roleRepository.findByName(roleName);
+            
+            if (role != null) {
+                // Add the role to user's roles
+                Set<Role> roles = user.getRoles();
+                if (roles == null) {
+                    roles = new HashSet<>();
+                }
+                
+                // Check if user already has this role
+                boolean alreadyHasRole = roles.stream()
+                    .anyMatch(r -> r.getId().equals(role.getId()));
+                
+                if (!alreadyHasRole) {
+                    roles.add(role);
+                    user.setRoles(roles);
+                    userService.update(user);
+                    log.info("Assigned role '{}' to user: {}", role.getName(), user.getUsername());
+                } else {
+                    log.debug("User '{}' already has role '{}'", user.getUsername(), role.getName());
+                }
+            } else {
+                log.warn("Role '{}' not found", roleName);
+            }
+        } catch (Exception e) {
+            log.error("Failed to assign role '{}' to user: {}", roleName, user.getUsername(), e);
+        }
+    }
+
+    /**
      * Creates a Player entity for the given user
      *
      * @param user The user to create a Player for
      */
     private void createPlayerEntity(User user) {
-        // Check if player already exists
-        Player existingPlayer = playerService.findByUserId(user.getId());
-        if (existingPlayer != null) {
-            return; // Player already exists
-        }
-
-        // Create new player
+        // Create player entity
         Player player = new Player();
         player.setName(user.getNickName());
         player.setUserId(user.getId());
         player.setRateScore(0D);
         player.setDescription("Player created upon registration");
 
+        // Save player - this will trigger role assignment via UserRoleSyncService
         playerService.create(player);
         log.info("Created player for user: {}", user.getUsername());
     }
@@ -348,18 +387,13 @@ public class AuthController {
      * @param user The user to create an EventOrganizer for
      */
     private void createEventOrganizerEntity(User user) {
-        // Check if event organizer already exists
-        List<EventOrganizer> existingOrganizers = eventOrganizerRepository.findByUserId(user.getId());
-        if (!existingOrganizers.isEmpty()) {
-            return; // Organizer already exists
-        }
-
         // Create new event organizer
         EventOrganizer organizer = new EventOrganizer();
         organizer.setUserId(user.getId());
         organizer.setDescription("Event organizer created upon registration");
 
-        eventOrganizerRepository.save(organizer);
+        // Save organizer - this will trigger role assignment via UserRoleSyncService
+        eventOrganizerService.create(organizer);
         log.info("Created event organizer for user: {}", user.getUsername());
     }
 }
