@@ -16,7 +16,6 @@
 package me.zhengjie.config.webConfig;
 
 import lombok.RequiredArgsConstructor;
-import me.zhengjie.utils.AnonTagUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanPostProcessor;
@@ -27,23 +26,18 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfoHandlerMapping;
 import springfox.documentation.builders.ApiInfoBuilder;
 import springfox.documentation.builders.PathSelectors;
-import springfox.documentation.service.ApiInfo;
-import springfox.documentation.service.ApiKey;
-import springfox.documentation.service.AuthorizationScope;
-import springfox.documentation.service.SecurityReference;
-import springfox.documentation.service.SecurityScheme;
+import springfox.documentation.service.*;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spi.service.contexts.SecurityContext;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.spring.web.plugins.WebFluxRequestHandlerProvider;
 import springfox.documentation.spring.web.plugins.WebMvcRequestHandlerProvider;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
+
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * api页面 /doc.html
@@ -74,8 +68,9 @@ public class SwaggerConfig {
                 .pathMapping("/")
                 .apiInfo(apiInfo())
                 .select()
-                .paths(PathSelectors.regex("^(?!/error).*"))
-                .paths(PathSelectors.any())
+                // .apis(RequestHandlerSelectors.basePackage("me.zhengjie.modules.system.rest")) // Example of specific package
+                // .paths(PathSelectors.regex("^(?!/error).*")) // Commented out to simplify path selection
+                .paths(PathSelectors.any().and(PathSelectors.ant("/api/localStorage/view/**").negate()))
                 .build()
                 //添加登陆认证
                 .securitySchemes(securitySchemes())
@@ -98,40 +93,31 @@ public class SwaggerConfig {
         return securitySchemes;
     }
 
-    private List<SecurityContext> securityContexts() {
-        //设置需要登录认证的路径
-        List<SecurityContext> securityContexts = new ArrayList<>();
-        securityContexts.add(getContextByPath());
-        return securityContexts;
-    }
-
-    private SecurityContext getContextByPath() {
-        Set<String> urls = AnonTagUtils.getAllAnonymousUrl(applicationContext);
-        urls = urls.stream().filter(url -> !url.equals("/")).collect(Collectors.toSet());
-        String regExp = "^(?!" + apiPath + String.join("|" + apiPath, urls) + ").*$";
-        return SecurityContext.builder()
-                .securityReferences(defaultAuth())
-                .operationSelector(o->o.requestMappingPattern()
-                        // 排除不需要认证的接口
-                        .matches(regExp))
-                .build();
-    }
-
     private List<SecurityReference> defaultAuth() {
-        List<SecurityReference> securityReferences = new ArrayList<>();
         AuthorizationScope authorizationScope = new AuthorizationScope("global", "accessEverything");
         AuthorizationScope[] authorizationScopes = new AuthorizationScope[1];
         authorizationScopes[0] = authorizationScope;
+        List<SecurityReference> securityReferences = new ArrayList<>();
         securityReferences.add(new SecurityReference(tokenHeader, authorizationScopes));
         return securityReferences;
     }
 
+    private List<SecurityContext> securityContexts() {
+        return new ArrayList<>(
+                Collections.singleton(SecurityContext.builder()
+                        .securityReferences(defaultAuth())
+                        // Exclude specific paths from security, including the file view path with a Java regex
+                        .forPaths(PathSelectors.regex("^(?!/auth/login|/auth/resend-verification|/api/limit|/auth/code|/api/localStorage/view/.*|/api/sports/ping|/auth/register|/auth/logout|/auth/verify-email).*$"))
+                        .build())
+        );
+    }
+
+    @SuppressWarnings("unchecked")
     /**
      * 解决Springfox与SpringBoot集成后，WebMvcRequestHandlerProvider和WebFluxRequestHandlerProvider冲突问题
      * @return /
      */
     @Bean
-    @SuppressWarnings({"all"})
     public static BeanPostProcessor springfoxHandlerProviderBeanPostProcessor() {
         return new BeanPostProcessor() {
 
@@ -146,7 +132,7 @@ public class SwaggerConfig {
             private <T extends RequestMappingInfoHandlerMapping> void customizeSpringfoxHandlerMappings(List<T> mappings) {
                 List<T> filteredMappings = mappings.stream()
                         .filter(mapping -> mapping.getPatternParser() == null)
-                        .collect(Collectors.toList());
+                        .toList();
                 mappings.clear();
                 mappings.addAll(filteredMappings);
             }
@@ -166,4 +152,3 @@ public class SwaggerConfig {
         };
     }
 }
-
