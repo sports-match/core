@@ -1,52 +1,29 @@
-/*
- *  Copyright 2019-2025 Zheng Jie
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
 package com.srr.service.impl;
 
 import com.srr.domain.*;
-import com.srr.enumeration.EventStatus;
-import com.srr.enumeration.Format;
-import com.srr.repository.*;
-import me.zhengjie.exception.EntityNotFoundException;
-import me.zhengjie.utils.ValidationUtil;
-import me.zhengjie.utils.FileUtil;
-import lombok.RequiredArgsConstructor;
-import com.srr.service.EventService;
 import com.srr.dto.EventDto;
 import com.srr.dto.EventQueryCriteria;
-import com.srr.dto.mapstruct.EventMapper;
 import com.srr.dto.JoinEventDto;
+import com.srr.dto.mapstruct.EventMapper;
+import com.srr.enumeration.EventStatus;
+import com.srr.enumeration.Format;
+import com.srr.enumeration.VerificationStatus;
+import com.srr.repository.*;
+import com.srr.service.EventService;
+import lombok.RequiredArgsConstructor;
 import me.zhengjie.exception.BadRequestException;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import me.zhengjie.exception.EntityNotFoundException;
+import me.zhengjie.utils.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import me.zhengjie.utils.PageUtil;
-import me.zhengjie.utils.QueryHelp;
-import me.zhengjie.utils.ExecutionResult;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.io.IOException;
-import javax.servlet.http.HttpServletResponse;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-
-import me.zhengjie.utils.PageResult;
+import java.util.*;
 
 /**
  * @author Chanheng
@@ -65,6 +42,7 @@ public class EventServiceImpl implements EventService {
     private final MatchGroupRepository matchGroupRepository;
     private final MatchRepository matchRepository;
     private final WaitListRepository waitListRepository;
+    private final EventOrganizerRepository eventOrganizerRepository;
 
     @Override
     public PageResult<EventDto> queryAll(EventQueryCriteria criteria, Pageable pageable) {
@@ -88,7 +66,25 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public EventDto create(Event resources) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+
+        // Check if the current user is an organizer and if they are verified
+        List<EventOrganizer> organizerList = eventOrganizerRepository.findByUserId(currentUserId);
+        if (!organizerList.isEmpty()) {
+            EventOrganizer organizer = organizerList.get(0); // Assuming one user has one organizer profile
+            if (organizer.getVerificationStatus() != VerificationStatus.VERIFIED) {
+                throw new BadRequestException("Organizer account is not verified. Event creation is not allowed.");
+            }
+        }
+        // If organizerList is empty, it means the user is not an organizer (e.g., an admin), 
+        // so the check is bypassed. Permission to create is handled by @PreAuthorize.
+
         resources.setStatus(EventStatus.DRAFT);
+        // Set the creator of the event using the Long ID directly
+        if (resources.getCreateBy() == null) { // Event.java has 'createBy' as Long
+             resources.setCreateBy(currentUserId);
+        }
+
         final var result = eventRepository.save(resources);
         return eventMapper.toDto(result);
     }
@@ -134,7 +130,7 @@ public class EventServiceImpl implements EventService {
         // Check if event is full and handle waitlist
         boolean isWaitList = joinEventDto.getJoinWaitList() != null && joinEventDto.getJoinWaitList();
         if (event.getMaxParticipants() != null && 
-            event.getCurrentParticipants() >= event.getMaxParticipants() && 
+            (event.getCurrentParticipants() != null && event.getCurrentParticipants() >= event.getMaxParticipants()) && 
             !isWaitList) {
             if (!event.isAllowWaitList()) {
                 throw new BadRequestException("Event is full and does not allow waitlist");
@@ -201,56 +197,75 @@ public class EventServiceImpl implements EventService {
             teamPlayer.setPlayer(player);
             teamPlayer.setCheckedIn(false);
             teamPlayerRepository.save(teamPlayer);
-            
-            // Save team again to ensure averageScore is updated
-            teamRepository.save(savedTeam);
+
+            // Update current participants if not joining waitlist
+            if (!isWaitList) {
+                event.setCurrentParticipants((event.getCurrentParticipants() == null ? 0 : event.getCurrentParticipants()) + 1);
+            } else {
+                // Add to waitlist
+                WaitList waitListEntry = new WaitList();
+                waitListEntry.setEventId(event.getId()); 
+                Player waitingPlayer = new Player(); 
+                waitingPlayer.setId(joinEventDto.getPlayerId());
+                waitListEntry.setPlayerId(waitingPlayer.getId()); 
+                waitListRepository.save(waitListEntry);
+            }
         }
         
-        // Update participant count if not joining waitlist
-        if (!isWaitList) {
-            event.setCurrentParticipants(event.getCurrentParticipants() + 1);
-        }
-        
-        // Save and return updated event
-        final var result = eventRepository.save(event);
-        return eventMapper.toDto(result);
+        eventRepository.save(event);
+        return eventMapper.toDto(event);
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public ExecutionResult deleteAll(Long[] ids) {
+        List<Long> successfulDeletes = new ArrayList<>();
+        List<Long> failedDeletes = new ArrayList<>();
+
         for (Long id : ids) {
-            // Get the event to check if it exists
-            Event event = eventRepository.findById(id)
-                    .orElseThrow(() -> new EntityNotFoundException(Event.class, "id", id.toString()));
-                    
-            // Delete match groups and matches for this event
-            List<MatchGroup> matchGroups = matchGroupRepository.findAllByEventId(id);
-            for (MatchGroup matchGroup : matchGroups) {
-                // Delete all matches in this group
-                List<Match> matches = matchRepository.findAllByMatchGroupId(matchGroup.getId());
-                matchRepository.deleteAll(matches);
+            Optional<Event> eventOptional = eventRepository.findById(id);
+            if (eventOptional.isPresent()) {
+                Event event = eventOptional.get();
+                // Check if the event status allows deletion (e.g., DRAFT or CLOSED)
+                if (event.getStatus() == EventStatus.DRAFT || event.getStatus() == EventStatus.CLOSED) {
+                    // Cascade delete related entities
+                    // Delete matches associated with match groups of this event
+                    List<MatchGroup> matchGroups = matchGroupRepository.findAllByEventId(id); 
+                    for (MatchGroup group : matchGroups) {
+                        matchRepository.deleteByMatchGroupId(group.getId());
+                    }
+                    // Delete match groups
+                    matchGroupRepository.deleteByEventId(id); 
+                    // Delete team players
+                    teamPlayerRepository.deleteByTeamEventId(id); 
+                    // Delete teams
+                    teamRepository.deleteByEventId(id); 
+                    // Delete waitlist entries
+                    waitListRepository.deleteByEventId(id); 
+                    // Finally, delete the event itself
+                    eventRepository.deleteById(id);
+                    successfulDeletes.add(id);
+                } else {
+                    // Event is in a state that does not allow deletion
+                    failedDeletes.add(id);
+                }
+            } else {
+                // Event not found
+                failedDeletes.add(id);
             }
-            matchGroupRepository.deleteAll(matchGroups);
-            
-            // Delete teams and team players for this event
-            List<Team> teams = teamRepository.findAllByEventId(id);
-            for (Team team : teams) {
-                // Delete all team players in this team
-                List<TeamPlayer> teamPlayers = teamPlayerRepository.findAllByTeamId(team.getId());
-                teamPlayerRepository.deleteAll(teamPlayers);
-            }
-            teamRepository.deleteAll(teams);
-            
-            // Delete wait list entries for this event
-            List<WaitList> waitListEntries = waitListRepository.findAllByEventId(id);
-            waitListRepository.deleteAll(waitListEntries);
-            
-            // Delete the event
-            eventRepository.deleteById(id);
         }
+        Map<String, Object> data = new HashMap<>();
+        data.put("successfulDeletes", successfulDeletes.size());
+        data.put("failedDeletes", failedDeletes.size());
+        data.put("details", Map.of("successfulIds", successfulDeletes, "failedIds", failedDeletes));
         
-        return ExecutionResult.of(null, Map.of("count", ids.length, "ids", ids));
+        // Use a common ID for the operation, or null if not applicable for bulk
+        Long operationId = (ids != null && ids.length > 0) ? ids[0] : null; 
+        if (!failedDeletes.isEmpty()) {
+             // If there are failures, the 'id' in ExecutionResult might represent the first failed ID for context
+            operationId = failedDeletes.get(0);
+        }
+        return ExecutionResult.of(operationId, data);
     }
 
     @Override
@@ -258,18 +273,19 @@ public class EventServiceImpl implements EventService {
         List<Map<String, Object>> list = new ArrayList<>();
         for (EventDto event : all) {
             Map<String, Object> map = new LinkedHashMap<>();
-            map.put("名称", event.getName());
-            map.put("描述", event.getDescription());
-            map.put("SINGLE, DOUBLE", event.getFormat());
-            map.put("位置", event.getLocation());
-            map.put("图片", event.getImage());
-            map.put("创建时间", event.getCreateTime());
-            map.put("更新时间", event.getUpdateTime());
-            map.put("排序", event.getSort());
-            map.put("是否启用", event.getEnabled());
-            map.put("时间", event.getEventTime());
-            map.put(" clubId", event.getClubId());
-            map.put(" createBy", event.getCreateBy());
+            map.put("Event Name", event.getName()); 
+            map.put("Description", event.getDescription());
+            map.put("Event Time", event.getEventTime()); 
+            map.put("Location", event.getLocation());
+            map.put("Format", event.getFormat());
+            map.put("Max Participants", event.getMaxParticipants());
+            map.put("Current Participants", event.getCurrentParticipants());
+            map.put("Status", event.getStatus());
+            map.put("Allow WaitList", event.isAllowWaitList());
+            map.put("Check-in At", event.getCheckInAt());
+            map.put("Created By ID", event.getCreateBy()); 
+            map.put("Create Time", event.getCreateTime());
+            map.put("Update Time", event.getUpdateTime());
             list.add(map);
         }
         FileUtil.downloadExcel(list, response);
