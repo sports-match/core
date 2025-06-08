@@ -22,7 +22,6 @@ A front-end and back-end separated management system based on Spring Boot 2.7.18
 - User Management: Configure users; new users default to password `123456`.
 - Role Management: Assign permissions and menus, set data permissions by department.
 - Menu Management: Dynamic routing, back-end configurable, supports multi-level menus.
-- Department Management: Configure system organization structure, tree-shaped table display.
 - Position Management: Configure positions for each department.
 - Dictionary Management: Maintain common fixed data, such as status and gender.
 - System Log: Record user operation logs and exception logs for easy error tracking.
@@ -72,9 +71,9 @@ The project uses a modular development approach, with the following structure:
 - eladmin-tools Third-party Tool Module
     - email Email tool
     - AWS S3 cloud storage tool
-    - alipay Alipay payment tool
     - local-storage Local storage tool
 - eladmin-generator System Code Generation Module
+```
 
 ## Running the Project
 
@@ -94,15 +93,16 @@ The project uses a modular development approach, with the following structure:
 3. **Run the Application**:
    ```bash
    # Using Maven Wrapper
-   ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+   ./mvnw -pl eladmin-system spring-boot:run
    
-   # Or using Maven directly
-   mvn spring-boot:run -Dspring-boot.run.profiles=dev
+   # Compile and build the project
+   ./mvnw clean package
    ```
 
 4. **Access the API**:
    - The API will be available at: `http://localhost:8000`
    - Swagger API documentation: `http://localhost:8000/swagger-ui/index.html`
+
 
 ### Production Environment
 
@@ -110,9 +110,6 @@ The project uses a modular development approach, with the following structure:
    ```bash
    # Using Maven Wrapper
    ./mvnw clean package -Pproduct -Dmaven.test.skip=true
-   
-   # Or using Maven directly
-   mvn clean package -Pproduct -Dmaven.test.skip=true
    ```
 
 2. **Configure Production Properties**:
@@ -123,7 +120,7 @@ The project uses a modular development approach, with the following structure:
 
 3. **Deploy the Application**:
    ```bash
-   java -jar eladmin-system/target/eladmin-system-2.7.jar --spring.profiles.active=prod
+   java -jar eladmin-system/target/eladmin-system-2.7.jar --spring.profiles.active=prod &
    ```
 
 4. **Server Requirements**:
