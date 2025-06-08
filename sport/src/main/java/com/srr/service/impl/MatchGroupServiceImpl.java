@@ -1,24 +1,8 @@
-/*
- *  Copyright 2019-2025 Zheng Jie
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
 package com.srr.service.impl;
 
 import com.srr.domain.Event;
 import com.srr.domain.MatchGroup;
 import com.srr.domain.Team;
-import com.srr.dto.MatchGroupGenerationDto;
 import com.srr.event.MatchGroupCreatedEvent;
 import com.srr.repository.EventRepository;
 import com.srr.repository.MatchGroupRepository;
@@ -38,7 +22,6 @@ import java.util.stream.Collectors;
 
 /**
  * @author Chanheng
- * @website https://eladmin.vip
  * @date 2025-05-26
  **/
 @Service
@@ -52,10 +35,10 @@ public class MatchGroupServiceImpl implements MatchGroupService {
 
     @Override
     @Transactional
-    public Integer generateMatchGroups(MatchGroupGenerationDto dto) {
+    public Integer generateMatchGroups(Long eventId) {
         // Find the event
-        Event event = eventRepository.findById(dto.getEventId())
-                .orElseThrow(() -> new EntityNotFoundException(Event.class, "id", dto.getEventId().toString()));
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EntityNotFoundException(Event.class, "id", eventId.toString()));
         
         // Check if the event has a group count
         if (event.getGroupCount() == null || event.getGroupCount() <= 0) {
@@ -66,7 +49,7 @@ public class MatchGroupServiceImpl implements MatchGroupService {
         List<Team> teams = event.getTeams();
         
         if (teams.isEmpty()) {
-            throw new BadRequestException("No teams found for event with ID: " + dto.getEventId());
+            throw new BadRequestException("No teams found for event with ID: " + eventId);
         }
         
         // Clear existing match groups for this event
@@ -104,7 +87,6 @@ public class MatchGroupServiceImpl implements MatchGroupService {
     /**
      * Group teams based strictly on their score order
      */
-    @Transactional
     private List<List<Team>> createTeamGroups(List<Team> sortedTeams, int targetGroupCount) {
         int totalTeams = sortedTeams.size();
         
@@ -132,7 +114,6 @@ public class MatchGroupServiceImpl implements MatchGroupService {
     /**
      * Create a match group from a list of teams
      */
-    @Transactional
     private void createMatchGroup(Event event, List<Team> teams, String name, int groupTeamSize) {
         MatchGroup matchGroup = new MatchGroup();
         matchGroup.setName(name);
