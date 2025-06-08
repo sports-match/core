@@ -17,6 +17,7 @@ package me.zhengjie.rest;
 
 import lombok.RequiredArgsConstructor;
 import me.zhengjie.annotation.Log;
+import me.zhengjie.annotation.rest.AnonymousGetMapping;
 import me.zhengjie.domain.LocalStorage;
 import me.zhengjie.exception.BadRequestException;
 import me.zhengjie.service.LocalStorageService;
@@ -34,6 +35,8 @@ import io.swagger.annotations.*;
 import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
 * @author Zheng Jie
@@ -64,21 +67,31 @@ public class LocalStorageController {
     @PostMapping
     @ApiOperation("Upload file")
     @PreAuthorize("@el.check('storage:add')")
-    public ResponseEntity<Object> createFile(@RequestParam String name, @RequestParam("file") MultipartFile file){
-        localStorageService.create(name, file);
-        return new ResponseEntity<>(HttpStatus.CREATED);
+    public ResponseEntity<Map<String, Object>> createFile(@RequestParam String name, @RequestParam("file") MultipartFile file){
+        LocalStorage localStorage = localStorageService.create(name, file);
+        String viewUrl = "/api/localStorage/view/" + localStorage.getRealName();
+        Map<String, Object> map = new HashMap<>(3);
+        map.put("id", localStorage.getId());
+        map.put("errno", 0);
+        map.put("data", new String[]{viewUrl});
+        return new ResponseEntity<>(map, HttpStatus.CREATED);
     }
 
     @ApiOperation("Upload image")
     @PostMapping("/pictures")
-    public ResponseEntity<LocalStorage> uploadPicture(@RequestParam MultipartFile file){
+    public ResponseEntity<Map<String, Object>> uploadPicture(@RequestParam MultipartFile file){
         // Determine whether the file is an image
         String suffix = FileUtil.getExtensionName(file.getOriginalFilename());
         if(!FileUtil.IMAGE.equals(FileUtil.getFileType(suffix))){
             throw new BadRequestException("Only images can be uploaded");
         }
         LocalStorage localStorage = localStorageService.create(null, file);
-        return new ResponseEntity<>(localStorage, HttpStatus.OK);
+        String viewUrl = "/api/localStorage/view/" + localStorage.getRealName();
+        Map<String, Object> map = new HashMap<>(3);
+        map.put("id", localStorage.getId());
+        map.put("errno", 0);
+        map.put("data", new String[]{viewUrl});
+        return new ResponseEntity<>(map, HttpStatus.OK);
     }
 
     @PutMapping
@@ -96,5 +109,11 @@ public class LocalStorageController {
     public ResponseEntity<Object> deleteFile(@RequestBody Long[] ids) {
         localStorageService.deleteAll(ids);
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @ApiOperation("View File / Image")
+    @AnonymousGetMapping("/view/{realName:.+}")
+    public void viewFile(@PathVariable String realName, HttpServletResponse response) throws IOException {
+        localStorageService.streamFile(realName, response);
     }
 }

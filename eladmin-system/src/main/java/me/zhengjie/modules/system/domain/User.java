@@ -72,9 +72,6 @@ public class User extends BaseEntity implements Serializable {
     @ApiModelProperty(value = "电话号码")
     private String phone;
 
-    @ApiModelProperty(value = "用户性别")
-    private String gender;
-
     @ApiModelProperty(value = "头像真实名称",hidden = true)
     private String avatarName;
 

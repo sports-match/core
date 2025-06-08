@@ -17,6 +17,7 @@ package com.srr.domain;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
+import com.srr.enumeration.Gender;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
@@ -28,6 +29,7 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 
 /**
 * @description
@@ -85,6 +87,15 @@ public class Player implements Serializable {
     @NotNull
     @ApiModelProperty(value = "userId")
     private Long userId;
+
+    @Column(name = "gender")
+    @Enumerated(EnumType.STRING)
+    @ApiModelProperty(value = "Gender")
+    private Gender gender;
+
+    @Column(name = "date_of_birth")
+    @ApiModelProperty(value = "Date of Birth")
+    private LocalDate dateOfBirth;
 
     public void copy(Player source){
         BeanUtil.copyProperties(source,this, CopyOptions.create().setIgnoreNullValue(true));
