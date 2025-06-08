@@ -16,17 +16,18 @@
 package me.zhengjie.modules.system.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import me.zhengjie.utils.PageResult;
 import me.zhengjie.config.properties.FileProperties;
 import me.zhengjie.exception.BadRequestException;
+import me.zhengjie.exception.EntityExistException;
+import me.zhengjie.exception.EntityNotFoundException;
 import me.zhengjie.modules.security.service.OnlineUserService;
 import me.zhengjie.modules.security.service.UserCacheManager;
 import me.zhengjie.modules.system.domain.User;
-import me.zhengjie.exception.EntityExistException;
-import me.zhengjie.exception.EntityNotFoundException;
 import me.zhengjie.modules.system.repository.UserRepository;
 import me.zhengjie.modules.system.service.UserService;
-import me.zhengjie.modules.system.service.dto.*;
+import me.zhengjie.modules.system.service.dto.RoleSmallDto;
+import me.zhengjie.modules.system.service.dto.UserDto;
+import me.zhengjie.modules.system.service.dto.UserQueryCriteria;
 import me.zhengjie.modules.system.service.mapstruct.UserMapper;
 import me.zhengjie.utils.*;
 import org.springframework.data.domain.Page;
@@ -34,6 +35,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.NotBlank;
 import java.io.File;
@@ -132,7 +134,6 @@ public class UserServiceImpl implements UserService {
         user.setRoles(resources.getRoles());
         user.setPhone(resources.getPhone());
         user.setNickName(resources.getNickName());
-        user.setGender(resources.getGender());
         userRepository.save(user);
         // Clear cache
         delCaches(user.getId(), user.getUsername());
@@ -149,7 +150,6 @@ public class UserServiceImpl implements UserService {
         }
         user.setNickName(resources.getNickName());
         user.setPhone(resources.getPhone());
-        user.setGender(resources.getGender());
         userRepository.save(user);
         // Clear cache
         delCaches(user.getId(), user.getUsername());

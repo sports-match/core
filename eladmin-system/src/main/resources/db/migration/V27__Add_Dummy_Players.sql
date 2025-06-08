@@ -25,13 +25,13 @@ BEGIN
         SET p_email = CONCAT('player', i, '@example.com');
         SET p_phone = CONCAT('138000000', LPAD(i, 2, '0'));
 
-        -- Insert into sys_user
+        -- Insert into sys_user (gender will be dropped by V30 later)
         INSERT INTO sys_user (username, nick_name, email, phone, password, enabled, gender, user_type, create_by, update_by, create_time, update_time, pwd_reset_time, is_admin, avatar_name, avatar_path, email_verified)
         VALUES (p_username, p_nickname, p_email, p_phone, '$2a$10$Egp1/fTw2AdS2vA1i2gPru9Wn2es8X32Y5323bV22wz8I2x23X.gC', b'1', '未知', 'PLAYER', 'admin', 'admin', NOW(), NOW(), NOW(), b'0', NULL, NULL, b'0');
 
         SET @last_user_id = LAST_INSERT_ID();
 
-        -- Insert into player table
+        -- Insert into player table (gender and date_of_birth columns don't exist when V27 runs)
         INSERT INTO player (name, description, latitude, longitude, profile_image, create_time, update_time, rate_score, user_id)
         VALUES (p_nickname, CONCAT('Description for ', p_nickname), NULL, NULL, NULL, NOW(), NOW(), FLOOR(1 + RAND() * 1000), @last_user_id);
 
@@ -49,7 +49,7 @@ DELIMITER ;
 -- Call the procedure
 CALL AddDummyPlayers();
 
--- Drop the procedure
-DROP PROCEDURE AddDummyPlayers;
+-- Clean up the procedure
+DROP PROCEDURE IF EXISTS AddDummyPlayers;
 
 SET FOREIGN_KEY_CHECKS = 1;
