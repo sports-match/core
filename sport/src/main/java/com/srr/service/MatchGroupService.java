@@ -30,5 +30,5 @@ public interface MatchGroupService {
      * @param dto parameters for group generation
      * @return Number of groups created
      */
-    Integer generateMatchGroups(MatchGroupGenerationDto dto);
+    Integer generateMatchGroups(Long eventId);
 }

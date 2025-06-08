@@ -194,21 +194,37 @@ public class PlayerAnswerServiceImpl implements PlayerAnswerService {
      * @param playerId The player ID
      */
     private void updatePlayerScore(Long playerId) {
-        List<PlayerAnswer> answers = playerAnswerRepository.findByPlayerId(playerId);
-        if (answers.isEmpty()) {
+        Optional<Player> playerOptional = playerRepository.findById(playerId);
+        if (playerOptional.isEmpty()) {
+            // Optionally log an error or throw an exception
+            // For now, just return if player not found to avoid NullPointerException
+            System.err.println("Player not found with ID: " + playerId + " when trying to update score.");
             return;
         }
+        Player player = playerOptional.get();
+
+        long totalQuestions = questionRepository.count();
+        long answeredQuestionsCount = playerAnswerRepository.countDistinctQuestionByPlayerId(playerId);
+
+        if (totalQuestions > 0 && answeredQuestionsCount == totalQuestions) {
+            player.setRateScore(500.0);
+        } else {
+            List<PlayerAnswer> answers = playerAnswerRepository.findByPlayerId(playerId);
+            if (answers.isEmpty()) {
+                // If no answers, perhaps set score to 0 or a default, or leave as is.
+                // Current behavior if answers is empty: average() returns 0.0, so score becomes 0.0
+                // Let's explicitly set to 0.0 if no answers, or if you prefer, player.setRateScore(null);
+                player.setRateScore(0.0); 
+            } else {
+                // Simple algorithm: average of all answer values
+                double averageScore = answers.stream()
+                        .mapToInt(PlayerAnswer::getAnswerValue)
+                        .average()
+                        .orElse(0.0); // Default to 0.0 if stream is empty (should not happen if answers is not empty)
+                player.setRateScore(averageScore);
+            }
+        }
         
-        // Simple algorithm: average of all answer values
-        double totalScore = answers.stream()
-                .mapToInt(PlayerAnswer::getAnswerValue)
-                .average()
-                .orElse(0.0);
-        
-        // Update player score
-        playerRepository.findById(playerId).ifPresent(player -> {
-            player.setRateScore(totalScore);
-            playerRepository.save(player);
-        });
+        playerRepository.save(player);
     }
 }
