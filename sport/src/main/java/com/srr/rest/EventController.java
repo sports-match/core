@@ -120,12 +120,12 @@ public class EventController {
         return new ResponseEntity<>(teamPlayerService.findByEventId(eventId), HttpStatus.OK);
     }
     
-    @PostMapping("/generate-groups")
+    @PostMapping("{id}/generate-groups")
     @Log("Generate match groups")
     @ApiOperation("Generate match groups based on team scores")
     @PreAuthorize("@el.check('event:admin')")
-    public ResponseEntity<Object> generateMatchGroups(@Validated @RequestBody MatchGroupGenerationDto dto) {
-        Integer groupsCreated = matchGroupService.generateMatchGroups(dto);
+    public ResponseEntity<Object> generateMatchGroups(@PathVariable("id") Long id) {
+        Integer groupsCreated = matchGroupService.generateMatchGroups(id);
         
         Map<String, Object> result = new HashMap<>();
         result.put("groupsCreated", groupsCreated);

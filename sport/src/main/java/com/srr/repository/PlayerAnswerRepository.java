@@ -37,4 +37,12 @@ public interface PlayerAnswerRepository extends JpaRepository<PlayerAnswer, Long
      * @return Count of answers for the player
      */
     long countByPlayerId(Long playerId);
+
+    /**
+     * Count distinct questions answered by a player
+     * @param playerId The player ID
+     * @return Count of distinct questions answered
+     */
+    @Query("SELECT COUNT(DISTINCT pa.questionId) FROM PlayerAnswer pa WHERE pa.playerId = :playerId")
+    long countDistinctQuestionByPlayerId(@Param("playerId") Long playerId);
 }

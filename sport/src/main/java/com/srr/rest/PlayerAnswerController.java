@@ -32,21 +32,21 @@ public class PlayerAnswerController {
     
     @ApiOperation("Get all player answers with pagination")
     @GetMapping
-    @PreAuthorize("@el.check('playerAnswer:list')")
+    @PreAuthorize("@el.check('player-answer:list')")
     public ResponseEntity<Object> getAll(PlayerAnswerDto criteria, Pageable pageable) {
         return new ResponseEntity<>(playerAnswerService.queryAll(criteria, pageable), HttpStatus.OK);
     }
     
     @ApiOperation("Get all answers for a player")
     @GetMapping("/player/{playerId}")
-    @PreAuthorize("@el.check('playerAnswer:list')")
+    @PreAuthorize("@el.check('player-answer:list')")
     public ResponseEntity<List<PlayerAnswerDto>> getByPlayerId(@PathVariable Long playerId) {
         return new ResponseEntity<>(playerAnswerService.getByPlayerId(playerId), HttpStatus.OK);
     }
     
     @ApiOperation("Get answers by player ID and question category")
     @GetMapping("/player/{playerId}/category/{category}")
-    @PreAuthorize("@el.check('playerAnswer:list')")
+    @PreAuthorize("@el.check('player-answer:list')")
     public ResponseEntity<List<PlayerAnswerDto>> getByPlayerIdAndCategory(
             @PathVariable Long playerId, 
             @PathVariable String category) {
@@ -76,21 +76,21 @@ public class PlayerAnswerController {
     
     @ApiOperation("Get player answer by ID")
     @GetMapping("/{id}")
-    @PreAuthorize("@el.check('playerAnswer:list')")
+    @PreAuthorize("@el.check('player-answer:list')")
     public ResponseEntity<PlayerAnswerDto> getById(@PathVariable Long id) {
         return new ResponseEntity<>(playerAnswerService.findById(id), HttpStatus.OK);
     }
     
     @ApiOperation("Create a new player answer")
     @PostMapping
-    @PreAuthorize("@el.check('playerAnswer:add')")
+    @PreAuthorize("@el.check('player-answer:add')")
     public ResponseEntity<ExecutionResult> create(@Validated @RequestBody PlayerAnswerDto resources) {
         return new ResponseEntity<>(playerAnswerService.create(resources), HttpStatus.CREATED);
     }
     
     @ApiOperation("Update a player answer")
     @PutMapping
-    @PreAuthorize("@el.check('playerAnswer:edit')")
+    @PreAuthorize("@el.check('player-answer:edit')")
     public ResponseEntity<Object> update(@Validated @RequestBody PlayerAnswerDto resources) {
         ExecutionResult result = playerAnswerService.update(resources);
         return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
@@ -98,7 +98,7 @@ public class PlayerAnswerController {
     
     @ApiOperation("Delete a player answer")
     @DeleteMapping("/{id}")
-    @PreAuthorize("@el.check('playerAnswer:del')")
+    @PreAuthorize("@el.check('player-answer:del')")
     public ResponseEntity<Object> delete(@PathVariable Long id) {
         ExecutionResult result = playerAnswerService.delete(id);
         return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
