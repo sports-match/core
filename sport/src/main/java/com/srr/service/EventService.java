@@ -93,4 +93,11 @@ public interface EventService {
     * @throws IOException /
     */
     void download(List<EventDto> all, HttpServletResponse response) throws IOException;
+
+    /**
+     * Validate if an organizer is allowed to create an event for a club
+     * @param organizerId ID of the organizer
+     * @param clubId ID of the club
+     */
+    void validateOrganizerClubPermission(Long organizerId, Long clubId);
 }

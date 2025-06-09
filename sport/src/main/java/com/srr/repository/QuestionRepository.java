@@ -1,6 +1,7 @@
 package com.srr.repository;
 
 import com.srr.domain.Question;
+import com.srr.domain.MatchFormat;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -27,4 +28,13 @@ public interface QuestionRepository extends JpaRepository<Question, Long>, JpaSp
      * @return List of questions in the category
      */
     List<Question> findByCategoryOrderByOrderIndex(String category);
+    
+    /**
+     * Find questions by sport and format
+     * @param sportId The sport ID
+     * @param format The match format
+     * @return List of questions in the sport and format
+     */
+    @Query("SELECT q FROM Question q WHERE q.sport.id = :sportId AND q.format = :format ORDER BY q.category, q.orderIndex")
+    List<Question> findBySportIdAndFormatOrderByCategoryAndOrderIndex(Long sportId, MatchFormat format);
 }

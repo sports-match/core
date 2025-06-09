@@ -20,6 +20,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 
@@ -67,4 +68,7 @@ public class PlayerDto implements Serializable {
 
     @ApiModelProperty(value = "出生日期")
     private LocalDate dateOfBirth;
+
+    @ApiModelProperty(value = "各运动评分")
+    private List<com.srr.dto.PlayerSportRatingDto> sportRatings;
 }

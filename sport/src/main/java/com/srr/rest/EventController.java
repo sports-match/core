@@ -75,6 +75,10 @@ public class EventController {
     @ApiOperation("Add event")
     @PreAuthorize("hasAuthority('Organizer')")
     public ResponseEntity<Object> createEvent(@Validated @RequestBody Event resources) {
+        // Enforce organizer-club permission
+        if (resources.getOrganizer() != null && resources.getOrganizer().getId() != null && resources.getClubId() != null) {
+            eventService.validateOrganizerClubPermission(resources.getOrganizer().getId(), resources.getClubId());
+        }
         final var result = eventService.create(resources);
         return new ResponseEntity<>(result, HttpStatus.CREATED);
     }

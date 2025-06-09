@@ -12,15 +12,17 @@ import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
-* @description Event organizer entity
-* @author Chanheng
-* @date 2025-05-26
-**/
+ * @author Chanheng
+ * @description Event organizer entity
+ * @date 2025-05-26
+ **/
 @Entity
 @Data
-@Table(name="event_organizer")
+@Table(name = "event_organizer")
 public class EventOrganizer implements Serializable {
 
     @Id
@@ -48,16 +50,31 @@ public class EventOrganizer implements Serializable {
     @ApiModelProperty(value = "userId")
     private Long userId;
 
-    @ManyToOne
-    @JoinColumn(name = "club_id")
-    private Club club;
+    @ManyToMany
+    @JoinTable(
+            name = "organizer_club",
+            joinColumns = @JoinColumn(name = "organizer_id"),
+            inverseJoinColumns = @JoinColumn(name = "club_id")
+    )
+    @ApiModelProperty(value = "Clubs this organizer can manage")
+    private Set<Club> clubs = new HashSet<>();
 
     @Enumerated(EnumType.STRING)
     @Column(name = "`verification_status`")
     @ApiModelProperty(value = "Verification Status")
     private VerificationStatus verificationStatus = VerificationStatus.PENDING;
 
-    public void copy(EventOrganizer source){
+    public void copy(EventOrganizer source) {
         BeanUtil.copyProperties(source, this, CopyOptions.create().setIgnoreNullValue(true));
+    }
+
+    public void addClub(Club club) {
+        if (clubs != null) {
+            this.clubs.add(club);
+        } else {
+            this.clubs = new HashSet<>();
+            this.clubs.add(club);
+        }
+
     }
 }

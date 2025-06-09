@@ -40,6 +40,13 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import me.zhengjie.utils.PageResult;
+import com.srr.repository.QuestionRepository;
+import com.srr.repository.PlayerAnswerRepository;
+import com.srr.domain.Question;
+import com.srr.domain.PlayerAnswer;
+import com.srr.repository.PlayerSportRatingRepository;
+import com.srr.domain.PlayerSportRating;
+import java.util.Optional;
 
 /**
 * @description 服务实现
@@ -52,11 +59,35 @@ public class PlayerServiceImpl implements PlayerService {
 
     private final PlayerRepository playerRepository;
     private final PlayerMapper playerMapper;
+    private final QuestionRepository questionRepository;
+    private final PlayerAnswerRepository playerAnswerRepository;
+    private final PlayerSportRatingRepository playerSportRatingRepository;
 
     @Override
     public PageResult<PlayerDto> queryAll(PlayerQueryCriteria criteria, Pageable pageable){
         Page<Player> page = playerRepository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root,criteria,criteriaBuilder),pageable);
-        return PageUtil.toPage(page.map(playerMapper::toDto));
+        // Map to DTOs and enrich with ratings
+        Page<PlayerDto> dtoPage = page.map(player -> {
+            PlayerDto dto = playerMapper.toDto(player);
+            dto.setSportRatings(playerSportRatingRepository.findByPlayerId(player.getId())
+                .stream()
+                .map(rating -> {
+                    com.srr.dto.PlayerSportRatingDto dtoRating = new com.srr.dto.PlayerSportRatingDto();
+                    dtoRating.setId(rating.getId());
+                    dtoRating.setPlayerId(rating.getPlayerId());
+                    dtoRating.setSport(rating.getSport());
+                    dtoRating.setFormat(rating.getFormat());
+                    dtoRating.setRateScore(rating.getRateScore());
+                    dtoRating.setRateBand(rating.getRateBand());
+                    dtoRating.setProvisional(rating.getProvisional());
+                    dtoRating.setCreateTime(rating.getCreateTime());
+                    dtoRating.setUpdateTime(rating.getUpdateTime());
+                    return dtoRating;
+                })
+                .collect(java.util.stream.Collectors.toList()));
+            return dto;
+        });
+        return PageUtil.toPage(dtoPage);
     }
 
     @Override
@@ -76,6 +107,7 @@ public class PlayerServiceImpl implements PlayerService {
     @Transactional(rollbackFor = Exception.class)
     public ExecutionResult create(Player resources) {
         Player savedPlayer = playerRepository.save(resources);
+        // No default answers; users will submit their own self-assessment
         return ExecutionResult.of(savedPlayer.getId());
     }
 
@@ -110,7 +142,7 @@ public class PlayerServiceImpl implements PlayerService {
             map.put("图片", player.getProfileImage());
             map.put("创建时间", player.getCreateTime());
             map.put("更新时间", player.getUpdateTime());
-            map.put("评分", player.getRateScore());
+            map.put("评分", ""); // Legacy field removed, optionally fetch from PlayerSportRating if needed
             map.put(" userId",  player.getUserId());
             list.add(map);
         }
@@ -126,22 +158,20 @@ public class PlayerServiceImpl implements PlayerService {
     public PlayerAssessmentStatusDto checkAssessmentStatus() {
         // Get current user ID
         Long currentUserId = SecurityUtils.getCurrentUserId();
-        
         // Find the player associated with the current user
         Player player = findByUserId(currentUserId);
-        
         if (player == null) {
             return new PlayerAssessmentStatusDto(false, "Player profile not found. Please create your profile first.");
         }
-        
-        // Check if the player has completed the self-assessment (rateScore is not null and not 0)
-        Double rateScore = player.getRateScore();
-        boolean isAssessmentCompleted = rateScore != null && rateScore > 0;
-        
+        // Check if the player has completed the self-assessment using PlayerSportRating (Badminton/DOUBLES as example)
+        boolean isAssessmentCompleted = false;
+        Optional<PlayerSportRating> ratingOpt = playerSportRatingRepository.findByPlayerIdAndSportAndFormat(player.getId(), "Badminton", "DOUBLES");
+        if (ratingOpt.isPresent() && ratingOpt.get().getRateScore() != null && ratingOpt.get().getRateScore() > 0) {
+            isAssessmentCompleted = true;
+        }
         String message = isAssessmentCompleted 
             ? "Self-assessment completed." 
             : "Please complete your self-assessment before joining any events.";
-        
         return new PlayerAssessmentStatusDto(isAssessmentCompleted, message);
     }
 }

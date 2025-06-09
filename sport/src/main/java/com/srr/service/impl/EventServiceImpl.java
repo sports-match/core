@@ -42,6 +42,7 @@ public class EventServiceImpl implements EventService {
     private final MatchGroupRepository matchGroupRepository;
     private final MatchRepository matchRepository;
     private final WaitListRepository waitListRepository;
+    private final PlayerSportRatingRepository playerSportRatingRepository;
     private final EventOrganizerRepository eventOrganizerRepository;
 
     @Override
@@ -76,7 +77,7 @@ public class EventServiceImpl implements EventService {
                 throw new BadRequestException("Organizer account is not verified. Event creation is not allowed.");
             }
         }
-        // If organizerList is empty, it means the user is not an organizer (e.g., an admin), 
+        // If organizerList is empty, it means the user is not an organizer (e.g., an admin),
         // so the check is bypassed. Permission to create is handled by @PreAuthorize.
 
         resources.setStatus(EventStatus.DRAFT);
@@ -118,6 +119,17 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public EventDto joinEvent(JoinEventDto joinEventDto) {
+        // Self-assessment enforcement: require PlayerSportRating for badminton/doubles
+        Long playerId = joinEventDto.getPlayerId();
+        // For phase 1, sport is always "Badminton", format is always "DOUBLES"
+        if (playerId == null) {
+            throw new BadRequestException("Player ID is required to join event");
+        }
+        var ratingOpt = playerSportRatingRepository.findByPlayerIdAndSportAndFormat(playerId, "Badminton", "DOUBLES");
+        if (ratingOpt.isEmpty() || ratingOpt.get().getRateScore() == null || ratingOpt.get().getRateScore() <= 0) {
+            throw new BadRequestException("Please complete your self-assessment before joining an event.");
+        }
+
         // Find the event
         Event event = eventRepository.findById(joinEventDto.getEventId())
                 .orElseThrow(() -> new EntityNotFoundException(Event.class, "id", String.valueOf(joinEventDto.getEventId())));
@@ -130,7 +142,7 @@ public class EventServiceImpl implements EventService {
         // Check if event is full and handle waitlist
         boolean isWaitList = joinEventDto.getJoinWaitList() != null && joinEventDto.getJoinWaitList();
         if (event.getMaxParticipants() != null && 
-            (event.getCurrentParticipants() != null && event.getCurrentParticipants() >= event.getMaxParticipants()) && 
+            (event.getCurrentParticipants() != null && event.getCurrentParticipants() >= event.getMaxParticipants()) &&
             !isWaitList) {
             if (!event.isAllowWaitList()) {
                 throw new BadRequestException("Event is full and does not allow waitlist");
@@ -204,10 +216,10 @@ public class EventServiceImpl implements EventService {
             } else {
                 // Add to waitlist
                 WaitList waitListEntry = new WaitList();
-                waitListEntry.setEventId(event.getId()); 
-                Player waitingPlayer = new Player(); 
+                waitListEntry.setEventId(event.getId());
+                Player waitingPlayer = new Player();
                 waitingPlayer.setId(joinEventDto.getPlayerId());
-                waitListEntry.setPlayerId(waitingPlayer.getId()); 
+                waitListEntry.setPlayerId(waitingPlayer.getId());
                 waitListRepository.save(waitListEntry);
             }
         }
@@ -230,18 +242,18 @@ public class EventServiceImpl implements EventService {
                 if (event.getStatus() == EventStatus.DRAFT || event.getStatus() == EventStatus.CLOSED) {
                     // Cascade delete related entities
                     // Delete matches associated with match groups of this event
-                    List<MatchGroup> matchGroups = matchGroupRepository.findAllByEventId(id); 
+                    List<MatchGroup> matchGroups = matchGroupRepository.findAllByEventId(id);
                     for (MatchGroup group : matchGroups) {
                         matchRepository.deleteByMatchGroupId(group.getId());
                     }
                     // Delete match groups
-                    matchGroupRepository.deleteByEventId(id); 
+                    matchGroupRepository.deleteByEventId(id);
                     // Delete team players
-                    teamPlayerRepository.deleteByTeamEventId(id); 
+                    teamPlayerRepository.deleteByTeamEventId(id);
                     // Delete teams
-                    teamRepository.deleteByEventId(id); 
+                    teamRepository.deleteByEventId(id);
                     // Delete waitlist entries
-                    waitListRepository.deleteByEventId(id); 
+                    waitListRepository.deleteByEventId(id);
                     // Finally, delete the event itself
                     eventRepository.deleteById(id);
                     successfulDeletes.add(id);
@@ -258,9 +270,9 @@ public class EventServiceImpl implements EventService {
         data.put("successfulDeletes", successfulDeletes.size());
         data.put("failedDeletes", failedDeletes.size());
         data.put("details", Map.of("successfulIds", successfulDeletes, "failedIds", failedDeletes));
-        
+
         // Use a common ID for the operation, or null if not applicable for bulk
-        Long operationId = (ids != null && ids.length > 0) ? ids[0] : null; 
+        Long operationId = (ids != null && ids.length > 0) ? ids[0] : null;
         if (!failedDeletes.isEmpty()) {
              // If there are failures, the 'id' in ExecutionResult might represent the first failed ID for context
             operationId = failedDeletes.get(0);
@@ -273,9 +285,9 @@ public class EventServiceImpl implements EventService {
         List<Map<String, Object>> list = new ArrayList<>();
         for (EventDto event : all) {
             Map<String, Object> map = new LinkedHashMap<>();
-            map.put("Event Name", event.getName()); 
+            map.put("Event Name", event.getName());
             map.put("Description", event.getDescription());
-            map.put("Event Time", event.getEventTime()); 
+            map.put("Event Time", event.getEventTime());
             map.put("Location", event.getLocation());
             map.put("Format", event.getFormat());
             map.put("Max Participants", event.getMaxParticipants());
@@ -283,11 +295,21 @@ public class EventServiceImpl implements EventService {
             map.put("Status", event.getStatus());
             map.put("Allow WaitList", event.isAllowWaitList());
             map.put("Check-in At", event.getCheckInAt());
-            map.put("Created By ID", event.getCreateBy()); 
+            map.put("Created By ID", event.getCreateBy());
             map.put("Create Time", event.getCreateTime());
             map.put("Update Time", event.getUpdateTime());
             list.add(map);
         }
         FileUtil.downloadExcel(list, response);
+    }
+
+    @Override
+    public void validateOrganizerClubPermission(Long organizerId, Long clubId) {
+        EventOrganizer organizer = eventOrganizerRepository.findById(organizerId)
+            .orElseThrow(() -> new IllegalArgumentException("Organizer not found"));
+        boolean allowed = organizer.getClubs().stream().anyMatch(club -> club.getId().equals(clubId));
+        if (!allowed) {
+            throw new org.springframework.security.access.AccessDeniedException("Organizer is not allowed to manage this club");
+        }
     }
 }

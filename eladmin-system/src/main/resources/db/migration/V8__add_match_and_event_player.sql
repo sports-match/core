@@ -18,6 +18,13 @@ CREATE TABLE match_group
     CONSTRAINT fk_match_group_event FOREIGN KEY (event_id) REFERENCES event (id)
 );
 
+create table group_player
+(
+    id        bigint auto_increment primary key,
+    player_id bigint not null references player (id),
+    group_id  bigint not null references match_group (id)
+);
+
 -- Create match table
 CREATE TABLE `match`
 (
