@@ -5,6 +5,7 @@ import com.srr.domain.Club;
 import com.srr.service.EventOrganizerService;
 import com.srr.service.ClubService;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,6 +24,7 @@ public class OrganizerController {
     private final EventOrganizerService organizerService;
     private final ClubService clubService;
 
+    @ApiOperation("Link clubs to organizer")
     @PostMapping("/{organizerId}/clubs")
     @PreAuthorize("@el.check('organizer:edit')")
     public ResponseEntity<?> linkClubsToOrganizer(
@@ -32,6 +34,7 @@ public class OrganizerController {
         return ResponseEntity.ok().build();
     }
 
+    @ApiOperation("Get clubs for organizer")
     @GetMapping("/{organizerId}/clubs")
     @PreAuthorize("@el.check('organizer:list')")
     public ResponseEntity<Set<Club>> getClubsForOrganizer(@PathVariable Long organizerId) {

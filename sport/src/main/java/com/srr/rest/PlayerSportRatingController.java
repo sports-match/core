@@ -2,29 +2,36 @@ package com.srr.rest;
 
 import com.srr.domain.PlayerSportRating;
 import com.srr.dto.PlayerSportRatingDto;
-import com.srr.repository.PlayerSportRatingRepository;
+import com.srr.service.PlayerSportRatingService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
+@Api(tags = "Player Sport Rating Management")
 @RestController
-@RequestMapping("/api/player-sport-rating")
+@RequestMapping("/api/player-sport-ratings")
 @RequiredArgsConstructor
 public class PlayerSportRatingController {
-    private final PlayerSportRatingRepository playerSportRatingRepository;
+    private final PlayerSportRatingService playerSportRatingService;
 
+    @ApiOperation("Get all ratings for a player")
     @GetMapping("/player/{playerId}")
-    public List<PlayerSportRatingDto> getRatingsForPlayer(@PathVariable Long playerId) {
-        return playerSportRatingRepository.findByPlayerId(playerId).stream().map(this::toDto).collect(Collectors.toList());
+    @PreAuthorize("@el.check('player-sport-rating:list')")
+    public ResponseEntity<List<PlayerSportRatingDto>> getRatingsForPlayer(@PathVariable Long playerId) {
+        return ResponseEntity.ok(playerSportRatingService.getRatingsForPlayer(playerId));
     }
 
+    @ApiOperation("Get rating for player, sport, and format")
     @GetMapping("/player/{playerId}/sport/{sport}/format/{format}")
-    public PlayerSportRatingDto getRatingForPlayerSportFormat(@PathVariable Long playerId, @PathVariable String sport, @PathVariable String format) {
-        return playerSportRatingRepository.findByPlayerIdAndSportAndFormat(playerId, sport, format)
-                .map(this::toDto)
-                .orElse(null);
+    @PreAuthorize("@el.check('player-sport-rating:list')")
+    public ResponseEntity<PlayerSportRatingDto> getRatingForPlayerSportFormat(@PathVariable Long playerId, @PathVariable String sport, @PathVariable String format) {
+        PlayerSportRatingDto dto = playerSportRatingService.getRatingForPlayerSportFormat(playerId, sport, format);
+        return dto != null ? ResponseEntity.ok(dto) : ResponseEntity.notFound().build();
     }
 
     private PlayerSportRatingDto toDto(PlayerSportRating entity) {
