@@ -15,6 +15,8 @@
  */
 package me.zhengjie.rest;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import me.zhengjie.annotation.Log;
 import me.zhengjie.annotation.rest.AnonymousGetMapping;
@@ -31,8 +33,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import io.swagger.annotations.*;
 import org.springframework.web.multipart.MultipartFile;
+
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.HashMap;
@@ -52,21 +54,21 @@ public class LocalStorageController {
 
     @GetMapping
     @ApiOperation("Query files")
-    @PreAuthorize("@el.check('storage:list')")
+    @PreAuthorize("hasAnyAuthority('Admin')")
     public ResponseEntity<PageResult<LocalStorageDto>> queryFile(LocalStorageQueryCriteria criteria, Pageable pageable){
         return new ResponseEntity<>(localStorageService.queryAll(criteria,pageable),HttpStatus.OK);
     }
 
     @ApiOperation("Export data")
     @GetMapping(value = "/download")
-    @PreAuthorize("@el.check('storage:list')")
+    @PreAuthorize("hasAnyAuthority('Admin')")
     public void exportFile(HttpServletResponse response, LocalStorageQueryCriteria criteria) throws IOException {
         localStorageService.download(localStorageService.queryAll(criteria), response);
     }
 
     @PostMapping
     @ApiOperation("Upload file")
-    @PreAuthorize("@el.check('storage:add')")
+    @PreAuthorize("hasAnyAuthority('Admin')")
     public ResponseEntity<Map<String, Object>> createFile(@RequestParam String name, @RequestParam("file") MultipartFile file){
         LocalStorage localStorage = localStorageService.create(name, file);
         String viewUrl = "/api/localStorage/view/" + localStorage.getRealName();
@@ -97,7 +99,7 @@ public class LocalStorageController {
     @PutMapping
     @Log("Update file")
     @ApiOperation("Update file")
-    @PreAuthorize("@el.check('storage:edit')")
+    @PreAuthorize("hasAnyAuthority('Admin')")
     public ResponseEntity<Object> updateFile(@Validated @RequestBody LocalStorage resources){
         localStorageService.update(resources);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
