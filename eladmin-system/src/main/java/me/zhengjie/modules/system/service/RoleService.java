@@ -20,9 +20,9 @@ import me.zhengjie.modules.system.domain.Role;
 import me.zhengjie.modules.system.service.dto.RoleDto;
 import me.zhengjie.modules.system.service.dto.RoleQueryCriteria;
 import me.zhengjie.modules.system.service.dto.RoleSmallDto;
-import me.zhengjie.modules.system.service.dto.UserDto;
 import me.zhengjie.utils.PageResult;
 import org.springframework.data.domain.Pageable;
+
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
@@ -80,19 +80,6 @@ public interface RoleService {
     Integer findByRoles(Set<Role> roles);
 
     /**
-     * 修改绑定的菜单
-     * @param resources /
-     * @param roleDTO /
-     */
-    void updateMenu(Role resources, RoleDto roleDTO);
-
-    /**
-     * 解绑菜单
-     * @param id /
-     */
-    void untiedMenu(Long id);
-
-    /**
      * 待条件分页查询
      * @param criteria 条件
      * @param pageable 分页参数
@@ -115,12 +102,7 @@ public interface RoleService {
      */
     void download(List<RoleDto> queryAll, HttpServletResponse response) throws IOException;
 
-    /**
-     * 获取用户权限信息
-     * @param user 用户信息
-     * @return 权限信息
-     */
-    List<AuthorityDto> buildPermissions(UserDto user);
+    List<AuthorityDto> buildPermissions(String username);
 
     /**
      * 验证是否被用户关联
@@ -128,10 +110,4 @@ public interface RoleService {
      */
     void verification(Set<Long> ids);
 
-    /**
-     * 根据菜单Id查询
-     * @param menuIds /
-     * @return /
-     */
-    List<Role> findInMenuId(List<Long> menuIds);
 }

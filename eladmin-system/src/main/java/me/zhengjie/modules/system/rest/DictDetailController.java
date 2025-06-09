@@ -33,6 +33,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,7 +72,7 @@ public class DictDetailController {
     @Log("新增字典详情")
     @ApiOperation("新增字典详情")
     @PostMapping
-    @PreAuthorize("@el.check('dict:add')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> createDictDetail(@Validated @RequestBody DictDetail resources){
         if (resources.getId() != null) {
             throw new BadRequestException("A new "+ ENTITY_NAME +" cannot already have an ID");
@@ -83,7 +84,7 @@ public class DictDetailController {
     @Log("修改字典详情")
     @ApiOperation("修改字典详情")
     @PutMapping
-    @PreAuthorize("@el.check('dict:edit')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> updateDictDetail(@Validated(DictDetail.Update.class) @RequestBody DictDetail resources){
         dictDetailService.update(resources);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
@@ -92,7 +93,7 @@ public class DictDetailController {
     @Log("删除字典详情")
     @ApiOperation("删除字典详情")
     @DeleteMapping(value = "/{id}")
-    @PreAuthorize("@el.check('dict:del')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> deleteDictDetail(@PathVariable Long id){
         dictDetailService.delete(id);
         return new ResponseEntity<>(HttpStatus.OK);

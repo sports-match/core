@@ -15,14 +15,9 @@
  */
 package me.zhengjie.utils;
 
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTUtil;
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONArray;
-import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
-import me.zhengjie.utils.enums.DataScopeEnum;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -71,11 +66,8 @@ public class SecurityUtils {
      * @return /
      */
     public static List<Long> getCurrentUserDataScope(){
-        UserDetails userDetails = getCurrentUser();
-        // 将 Java 对象转换为 JSONObject 对象
-        JSONObject jsonObject = (JSONObject) JSON.toJSON(userDetails);
-        JSONArray jsonArray = jsonObject.getJSONArray("dataScopes");
-        return JSON.parseArray(jsonArray.toJSONString(), Long.class);
+        // Department-based data scopes are removed, so return an empty list.
+        return new java.util.ArrayList<>();
     }
 
     /**
@@ -83,11 +75,8 @@ public class SecurityUtils {
      * @return 级别
      */
     public static String getDataScopeType() {
-        List<Long> dataScopes = getCurrentUserDataScope();
-        if(CollUtil.isEmpty(dataScopes)){
-            return "";
-        }
-        return DataScopeEnum.ALL.getValue();
+        // Data scopes are removed, defaulting to "ALL" equivalent.
+        return "全部";
     }
 
     /**

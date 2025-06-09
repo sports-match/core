@@ -50,7 +50,7 @@ jobs:
       run: ./mvnw test
       
     - name: Run architecture tests
-      run: ./mvnw test -pl sport -Dtest=com.srr.architecture.*Test -Dmaven.repo.local=$HOME/.m2/repository
+      run: ./mvnw test -pl eladmin-system -Dtest=com.srr.architecture.*Test -Dmaven.repo.local=$HOME/.m2/repository
       
     - name: Upload test results
       if: always()

@@ -20,7 +20,6 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
 import me.zhengjie.base.BaseEntity;
-import me.zhengjie.utils.enums.DataScopeEnum;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
@@ -52,19 +51,9 @@ public class Role extends BaseEntity implements Serializable {
     @ApiModelProperty(value = "用户", hidden = true)
     private Set<User> users;
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "sys_roles_menus",
-            joinColumns = {@JoinColumn(name = "role_id",referencedColumnName = "role_id")},
-            inverseJoinColumns = {@JoinColumn(name = "menu_id",referencedColumnName = "menu_id")})
-    @ApiModelProperty(value = "菜单", hidden = true)
-    private Set<Menu> menus;
-
     @NotBlank
     @ApiModelProperty(value = "名称", hidden = true)
     private String name;
-
-    @ApiModelProperty(value = "数据权限，全部 、 本级 、 自定义")
-    private String dataScope = DataScopeEnum.THIS_LEVEL.getValue();
 
     @Column(name = "level")
     @ApiModelProperty(value = "级别，数值越小，级别越大")
