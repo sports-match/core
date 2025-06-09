@@ -80,19 +80,6 @@ public interface RoleService {
     Integer findByRoles(Set<Role> roles);
 
     /**
-     * 修改绑定的菜单
-     * @param resources /
-     * @param roleDTO /
-     */
-    void updateMenu(Role resources, RoleDto roleDTO);
-
-    /**
-     * 解绑菜单
-     * @param id /
-     */
-    void untiedMenu(Long id);
-
-    /**
      * 待条件分页查询
      * @param criteria 条件
      * @param pageable 分页参数
@@ -123,10 +110,4 @@ public interface RoleService {
      */
     void verification(Set<Long> ids);
 
-    /**
-     * 根据菜单Id查询
-     * @param menuIds /
-     * @return /
-     */
-    List<Role> findInMenuId(List<Long> menuIds);
 }

@@ -119,38 +119,22 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
-    public void updateMenu(Role resources, RoleDto roleDTO) {
-        Role role = roleMapper.toEntity(roleDTO);
-        List<User> users = userRepository.findByRoleId(role.getId());
-        // 更新菜单
-        role.setMenus(resources.getMenus());
-        delCaches(resources.getId(), users);
-        roleRepository.save(role);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void untiedMenu(Long menuId) {
-        // 更新菜单
-        roleRepository.untiedMenu(menuId);
-    }
-
-    @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(Set<Long> ids) {
         for (Long id : ids) {
             // 更新相关缓存
-            delCaches(id, null);
+            RoleDto roleDto = findById(id);
+            delCaches(roleDto.getId(), userRepository.findByRoleId(roleDto.getId()));
         }
         roleRepository.deleteAllByIdIn(ids);
     }
 
     @Override
-    public List<RoleSmallDto> findByUsersId(Long userId) {
-        String key = CacheKey.ROLE_USER + userId;
+    public List<RoleSmallDto> findByUsersId(Long id) {
+        String key = CacheKey.ROLE_USER + id;
         List<RoleSmallDto> roles = redisUtils.getList(key, RoleSmallDto.class);
         if (CollUtil.isEmpty(roles)) {
-            roles = roleSmallMapper.toDto(new ArrayList<>(roleRepository.findByUserId(userId)));
+            roles = roleSmallMapper.toDto(new ArrayList<>(roleRepository.findByUserId(id)));
             redisUtils.set(key, roles, 1, TimeUnit.DAYS);
         }
         return roles;
@@ -213,17 +197,7 @@ public class RoleServiceImpl implements RoleService {
         }
     }
 
-    @Override
-    public List<Role> findInMenuId(List<Long> menuIds) {
-        return roleRepository.findInMenuId(menuIds);
-    }
-
-    /**
-     * 清理缓存
-     *
-     * @param id /
-     */
-    public void delCaches(Long id, List<User> users) {
+    private void delCaches(Long id, List<User> users) {
         users = CollectionUtil.isEmpty(users) ? userRepository.findByRoleId(id) : users;
         if (CollectionUtil.isNotEmpty(users)) {
             users.forEach(item -> userCacheManager.cleanUserCache(item.getUsername()));

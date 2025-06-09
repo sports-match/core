@@ -19,6 +19,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
 import me.zhengjie.base.BaseDTO;
+
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.Set;
@@ -33,9 +34,6 @@ public class RoleDto extends BaseDTO implements Serializable {
 
     @ApiModelProperty(value = "ID")
     private Long id;
-
-    @ApiModelProperty(value = "菜单")
-    private Set<MenuDto> menus;
 
     @ApiModelProperty(value = "部门")
     private Set<DeptDto> depts;
