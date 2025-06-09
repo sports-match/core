@@ -17,18 +17,6 @@
     </properties>
 
     <dependencies>
-        <!-- Code Generation Module -->
-        <dependency>
-            <groupId>me.zhengjie</groupId>
-            <artifactId>eladmin-generator</artifactId>
-            <version>2.7</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>me.zhengjie</groupId>
-                    <artifactId>eladmin-common</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
 
         <!-- The tools module includes the common and logging modules -->
         <dependency>
