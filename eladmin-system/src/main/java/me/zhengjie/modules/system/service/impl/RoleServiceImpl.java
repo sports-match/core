@@ -19,11 +19,10 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import lombok.RequiredArgsConstructor;
 import me.zhengjie.exception.BadRequestException;
+import me.zhengjie.exception.EntityExistException;
 import me.zhengjie.modules.security.service.UserCacheManager;
 import me.zhengjie.modules.security.service.dto.AuthorityDto;
-import me.zhengjie.modules.system.domain.Menu;
 import me.zhengjie.modules.system.domain.Role;
-import me.zhengjie.exception.EntityExistException;
 import me.zhengjie.modules.system.domain.User;
 import me.zhengjie.modules.system.repository.RoleRepository;
 import me.zhengjie.modules.system.repository.UserRepository;
@@ -40,6 +39,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.*;
@@ -166,7 +166,7 @@ public class RoleServiceImpl implements RoleService {
         for (Role role : roles) {
             roleDtos.add(findById(role.getId()));
         }
-        return Collections.min(roleDtos.stream().map(RoleDto::getLevel).collect(Collectors.toList()));
+        return Collections.min(roleDtos.stream().map(RoleDto::getLevel).toList());
     }
 
     @Override
@@ -174,19 +174,14 @@ public class RoleServiceImpl implements RoleService {
         String key = CacheKey.ROLE_AUTH + user.getId();
         List<AuthorityDto> authorityDtos = redisUtils.getList(key, AuthorityDto.class);
         if (CollUtil.isEmpty(authorityDtos)) {
-            Set<String> permissions = new HashSet<>();
             // 如果是管理员直接返回
-            if (user.getIsAdmin()) {
-                permissions.add("admin");
-                return permissions.stream().map(AuthorityDto::new)
-                        .collect(Collectors.toList());
-            }
-            Set<Role> roles = roleRepository.findByUserId(user.getId());
-            permissions = roles.stream().flatMap(role -> role.getMenus().stream())
-                    .map(Menu::getPermission)
-                    .filter(StringUtils::isNotBlank).collect(Collectors.toSet());
-            authorityDtos = permissions.stream().map(AuthorityDto::new)
+            authorityDtos = roleRepository.findByUserId(user.getId())
+                    .stream()
+                    .map(Role::getName)
+                    .filter(StringUtils::isNotBlank)
+                    .map(AuthorityDto::new)
                     .collect(Collectors.toList());
+
             redisUtils.set(key, authorityDtos, 1, TimeUnit.HOURS);
         }
         return authorityDtos;
@@ -221,6 +216,7 @@ public class RoleServiceImpl implements RoleService {
 
     /**
      * 清理缓存
+     *
      * @param id /
      */
     public void delCaches(Long id, List<User> users) {
