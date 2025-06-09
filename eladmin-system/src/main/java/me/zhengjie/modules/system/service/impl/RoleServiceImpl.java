@@ -111,7 +111,6 @@ public class RoleServiceImpl implements RoleService {
         }
         role.setName(resources.getName());
         role.setDescription(resources.getDescription());
-        role.setDataScope(resources.getDataScope());
         role.setLevel(resources.getLevel());
         roleRepository.save(role);
         // 更新相关缓存
@@ -182,7 +181,6 @@ public class RoleServiceImpl implements RoleService {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("Role name", role.getName());
             map.put("Role description", role.getDescription());
-            map.put("Role data scope", role.getDataScope());
             map.put("Role level", role.getLevel());
             map.put("Creation date", role.getCreateTime());
             list.add(map);

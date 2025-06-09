@@ -22,7 +22,6 @@ import me.zhengjie.base.BaseDTO;
 
 import java.io.Serializable;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * @author Zheng Jie
@@ -35,14 +34,8 @@ public class RoleDto extends BaseDTO implements Serializable {
     @ApiModelProperty(value = "ID")
     private Long id;
 
-    @ApiModelProperty(value = "部门")
-    private Set<DeptDto> depts;
-
     @ApiModelProperty(value = "名称")
     private String name;
-
-    @ApiModelProperty(value = "数据权限")
-    private String dataScope;
 
     @ApiModelProperty(value = "级别")
     private Integer level;
