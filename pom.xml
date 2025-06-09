@@ -12,7 +12,6 @@
         <module>eladmin-logging</module>
         <module>eladmin-system</module>
         <module>eladmin-tools</module>
-        <module>sport</module>
     </modules>
 
     <name>ELADMIN Admin Backend</name>
