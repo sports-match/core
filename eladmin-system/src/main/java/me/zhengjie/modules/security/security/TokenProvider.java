@@ -23,6 +23,7 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.modules.security.config.SecurityProperties;
+import me.zhengjie.modules.security.service.dto.AuthorityDto;
 import me.zhengjie.modules.security.service.dto.JwtUserDto;
 import me.zhengjie.utils.RedisUtils;
 import org.springframework.beans.factory.InitializingBean;
@@ -30,9 +31,13 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
+
 import javax.servlet.http.HttpServletRequest;
 import java.security.Key;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -91,10 +96,10 @@ public class TokenProvider implements InitializingBean {
      * @param token /
      * @return /
      */
-    Authentication getAuthentication(String token) {
+    Authentication getAuthentication(String token, List<AuthorityDto> authorities) {
         Claims claims = getClaims(token);
-        User principal = new User(claims.getSubject(), "******", new ArrayList<>());
-        return new UsernamePasswordAuthenticationToken(principal, token, new ArrayList<>());
+        User principal = new User(claims.getSubject(), "******", authorities);
+        return new UsernamePasswordAuthenticationToken(principal, token, authorities);
     }
 
     public Claims getClaims(String token) {
@@ -130,6 +135,7 @@ public class TokenProvider implements InitializingBean {
 
     /**
      * 获取登录用户RedisKey
+     *
      * @param token /
      * @return key
      */
@@ -140,6 +146,7 @@ public class TokenProvider implements InitializingBean {
 
     /**
      * 获取登录用户TokenKey
+     *
      * @param token /
      * @return /
      */

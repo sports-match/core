@@ -16,8 +16,12 @@
 package me.zhengjie.modules.security.config;
 
 import lombok.RequiredArgsConstructor;
-import me.zhengjie.modules.security.security.*;
+import me.zhengjie.modules.security.security.JwtAccessDeniedHandler;
+import me.zhengjie.modules.security.security.JwtAuthenticationEntryPoint;
+import me.zhengjie.modules.security.security.TokenConfigurer;
+import me.zhengjie.modules.security.security.TokenProvider;
 import me.zhengjie.modules.security.service.OnlineUserService;
+import me.zhengjie.modules.system.service.RoleService;
 import me.zhengjie.utils.AnonTagUtils;
 import me.zhengjie.utils.enums.RequestMethodEnum;
 import org.springframework.context.ApplicationContext;
@@ -32,7 +36,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.filter.CorsFilter;
-import java.util.*;
+
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Zheng Jie
@@ -49,6 +55,7 @@ public class SpringSecurityConfig {
     private final ApplicationContext applicationContext;
     private final SecurityProperties properties;
     private final OnlineUserService onlineUserService;
+    private final RoleService roleService;
 
     @Bean
     GrantedAuthorityDefaults grantedAuthorityDefaults() {
@@ -127,6 +134,6 @@ public class SpringSecurityConfig {
     }
 
     private TokenConfigurer securityConfigurerAdapter() {
-        return new TokenConfigurer(tokenProvider, properties, onlineUserService);
+        return new TokenConfigurer(tokenProvider, properties, onlineUserService, roleService);
     }
 }

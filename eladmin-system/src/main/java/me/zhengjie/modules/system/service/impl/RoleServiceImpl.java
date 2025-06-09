@@ -30,7 +30,6 @@ import me.zhengjie.modules.system.service.RoleService;
 import me.zhengjie.modules.system.service.dto.RoleDto;
 import me.zhengjie.modules.system.service.dto.RoleQueryCriteria;
 import me.zhengjie.modules.system.service.dto.RoleSmallDto;
-import me.zhengjie.modules.system.service.dto.UserDto;
 import me.zhengjie.modules.system.service.mapstruct.RoleMapper;
 import me.zhengjie.modules.system.service.mapstruct.RoleSmallMapper;
 import me.zhengjie.utils.*;
@@ -170,12 +169,17 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
-    public List<AuthorityDto> buildPermissions(UserDto user) {
-        String key = CacheKey.ROLE_AUTH + user.getId();
+    public List<AuthorityDto> buildPermissions(String username) {
+        final var user = userRepository.findByUsername(username);
+        if (user == null) {
+            return Collections.emptyList();
+        }
+        final var userId = user.getId();
+        String key = CacheKey.ROLE_AUTH + userId;
         List<AuthorityDto> authorityDtos = redisUtils.getList(key, AuthorityDto.class);
         if (CollUtil.isEmpty(authorityDtos)) {
             // 如果是管理员直接返回
-            authorityDtos = roleRepository.findByUserId(user.getId())
+            authorityDtos = roleRepository.findByUserId(userId)
                     .stream()
                     .map(Role::getName)
                     .filter(StringUtils::isNotBlank)

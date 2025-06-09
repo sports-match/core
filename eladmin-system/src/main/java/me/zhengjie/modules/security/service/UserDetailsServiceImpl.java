@@ -26,6 +26,7 @@ import me.zhengjie.modules.system.service.UserService;
 import me.zhengjie.modules.system.service.dto.UserDto;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 
 /**
@@ -53,7 +54,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                     throw new BadRequestException("账号未激活！");
                 }
                 // 获取用户的权限
-                List<AuthorityDto> authorities = roleService.buildPermissions(user);
+                List<AuthorityDto> authorities = roleService.buildPermissions(username);
                 // 初始化JwtUserDto
                 jwtUserDto = new JwtUserDto(user, dataService.getDeptIds(user), authorities);
                 // 添加缓存数据

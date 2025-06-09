@@ -20,9 +20,9 @@ import me.zhengjie.modules.system.domain.Role;
 import me.zhengjie.modules.system.service.dto.RoleDto;
 import me.zhengjie.modules.system.service.dto.RoleQueryCriteria;
 import me.zhengjie.modules.system.service.dto.RoleSmallDto;
-import me.zhengjie.modules.system.service.dto.UserDto;
 import me.zhengjie.utils.PageResult;
 import org.springframework.data.domain.Pageable;
+
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
@@ -115,12 +115,7 @@ public interface RoleService {
      */
     void download(List<RoleDto> queryAll, HttpServletResponse response) throws IOException;
 
-    /**
-     * 获取用户权限信息
-     * @param user 用户信息
-     * @return 权限信息
-     */
-    List<AuthorityDto> buildPermissions(UserDto user);
+    List<AuthorityDto> buildPermissions(String username);
 
     /**
      * 验证是否被用户关联

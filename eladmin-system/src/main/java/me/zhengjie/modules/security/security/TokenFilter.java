@@ -16,15 +16,17 @@
 package me.zhengjie.modules.security.security;
 
 import cn.hutool.core.util.StrUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.modules.security.config.SecurityProperties;
-import me.zhengjie.modules.security.service.dto.OnlineUserDto;
 import me.zhengjie.modules.security.service.OnlineUserService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import me.zhengjie.modules.security.service.dto.OnlineUserDto;
+import me.zhengjie.modules.system.service.RoleService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.GenericFilterBean;
+
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -35,24 +37,15 @@ import java.io.IOException;
 /**
  * @author /
  */
+@Slf4j
+@RequiredArgsConstructor
 public class TokenFilter extends GenericFilterBean {
-    private static final Logger log = LoggerFactory.getLogger(TokenFilter.class);
-
 
     private final TokenProvider tokenProvider;
     private final SecurityProperties properties;
     private final OnlineUserService onlineUserService;
+    private final RoleService roleService;
 
-    /**
-     * @param tokenProvider     Token
-     * @param properties        JWT
-     * @param onlineUserService 用户在线
-     */
-    public TokenFilter(TokenProvider tokenProvider, SecurityProperties properties, OnlineUserService onlineUserService) {
-        this.properties = properties;
-        this.onlineUserService = onlineUserService;
-        this.tokenProvider = tokenProvider;
-    }
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)
@@ -68,8 +61,9 @@ public class TokenFilter extends GenericFilterBean {
             if (onlineUserDto != null) {
                 // Token 续期判断
                 tokenProvider.checkRenewal(token);
+                var authorities = roleService.buildPermissions(onlineUserDto.getUserName());
                 // 获取认证信息，设置上下文
-                Authentication authentication = tokenProvider.getAuthentication(token);
+                Authentication authentication = tokenProvider.getAuthentication(token, authorities);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         }
@@ -88,7 +82,7 @@ public class TokenFilter extends GenericFilterBean {
             // 去掉令牌前缀
             return bearerToken.replace(properties.getTokenStartWith(), "");
         } else {
-            log.debug("非法Token：{}", bearerToken);
+            log.debug("Invalid Token：{}", bearerToken);
         }
         return null;
     }
