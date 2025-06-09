@@ -23,7 +23,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -42,14 +45,14 @@ public class TeamController {
 
     @GetMapping("/teams/{id}")
     @ApiOperation("Get team details")
-    @PreAuthorize("@el.check('event:list')")
+    @PreAuthorize("hasAuthority('Organizer')")
     public ResponseEntity<TeamDto> getTeam(@PathVariable Long id) {
         return new ResponseEntity<>(teamService.findById(id), HttpStatus.OK);
     }
 
     @GetMapping("/events/{eventId}/teams")
     @ApiOperation("Get all teams for an event")
-    @PreAuthorize("@el.check('event:list')")
+    @PreAuthorize("hasAuthority('Organizer')")
     public ResponseEntity<List<TeamDto>> getTeamsByEvent(@PathVariable Long eventId) {
         return new ResponseEntity<>(teamService.findByEventId(eventId), HttpStatus.OK);
     }

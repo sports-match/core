@@ -19,7 +19,6 @@ import com.srr.domain.Event;
 import com.srr.dto.EventDto;
 import com.srr.dto.EventQueryCriteria;
 import com.srr.dto.JoinEventDto;
-import com.srr.dto.MatchGroupGenerationDto;
 import com.srr.dto.TeamPlayerDto;
 import com.srr.enumeration.EventStatus;
 import com.srr.service.EventService;
@@ -38,8 +37,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,14 +58,14 @@ public class EventController {
 
     @GetMapping
     @ApiOperation("Query event")
-    @PreAuthorize("@el.check('event:list')")
+    @PreAuthorize("hasAuthority('Organizer')")
     public ResponseEntity<PageResult<EventDto>> queryEvent(EventQueryCriteria criteria, Pageable pageable) {
         return new ResponseEntity<>(eventService.queryAll(criteria, pageable), HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
     @ApiOperation("Get event by ID")
-    @PreAuthorize("@el.check('event:list')")
+    @PreAuthorize("hasAuthority('Organizer')")
     public ResponseEntity<EventDto> getById(@PathVariable Long id) {
         return new ResponseEntity<>(eventService.findById(id), HttpStatus.OK);
     }
@@ -76,7 +73,7 @@ public class EventController {
     @PostMapping
     @Log("Add event")
     @ApiOperation("Add event")
-    @PreAuthorize("@el.check('event:add')")
+    @PreAuthorize("hasAuthority('Organizer')")
     public ResponseEntity<Object> createEvent(@Validated @RequestBody Event resources) {
         final var result = eventService.create(resources);
         return new ResponseEntity<>(result, HttpStatus.CREATED);
@@ -85,7 +82,7 @@ public class EventController {
     @PutMapping
     @Log("Modify event")
     @ApiOperation("Modify event")
-    @PreAuthorize("@el.check('event:edit')")
+    @PreAuthorize("hasAuthority('Organizer')")
     public ResponseEntity<Object> updateEvent(@Validated @RequestBody Event resources) {
         final var result = eventService.update(resources);
         return new ResponseEntity<>(result, HttpStatus.OK);
@@ -94,7 +91,7 @@ public class EventController {
     @PatchMapping("/{id}/status/{status}")
     @Log("Update event status")
     @ApiOperation("Update event status")
-    @PreAuthorize("@el.check('event:edit')")
+    @PreAuthorize("hasAuthority('Organizer')")
     public ResponseEntity<Object> updateEventStatus(
             @PathVariable Long id, 
             @PathVariable EventStatus status) {
@@ -105,7 +102,7 @@ public class EventController {
     @PostMapping("/{id}/join")
     @Log("Join event")
     @ApiOperation("Join event")
-    @PreAuthorize("@el.check('event:join')")
+    @PreAuthorize("hasAuthority('Organizer')")
     public ResponseEntity<Object> joinEvent(@PathVariable Long id, @RequestBody JoinEventDto joinEventDto) {
         // Ensure ID in path matches ID in DTO
         joinEventDto.setEventId(id);
@@ -115,7 +112,7 @@ public class EventController {
 
     @GetMapping("/{id}/players")
     @ApiOperation("Find all team players in an event")
-    @PreAuthorize("@el.check('event:list')")
+    @PreAuthorize("hasAuthority('Organizer')")
     public ResponseEntity<List<TeamPlayerDto>> findEventPlayers(@PathVariable("id") Long eventId) {
         return new ResponseEntity<>(teamPlayerService.findByEventId(eventId), HttpStatus.OK);
     }
@@ -123,7 +120,7 @@ public class EventController {
     @PostMapping("{id}/generate-groups")
     @Log("Generate match groups")
     @ApiOperation("Generate match groups based on team scores")
-    @PreAuthorize("@el.check('event:admin')")
+    @PreAuthorize("hasAuthority('Organizer')")
     public ResponseEntity<Object> generateMatchGroups(@PathVariable("id") Long id) {
         Integer groupsCreated = matchGroupService.generateMatchGroups(id);
         
@@ -137,7 +134,7 @@ public class EventController {
     @DeleteMapping
     @Log("Delete event")
     @ApiOperation("Delete event")
-    @PreAuthorize("@el.check('event:del')")
+    @PreAuthorize("hasAuthority('Organizer')")
     public ResponseEntity<Object> deleteEvent(@ApiParam(value = "Pass ID array[]") @RequestBody Long[] ids) {
         eventService.deleteAll(ids);
         return new ResponseEntity<>(HttpStatus.OK);

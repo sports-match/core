@@ -13,9 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
 * @description Question controller for API endpoints
@@ -32,42 +30,42 @@ public class QuestionController {
     
     @ApiOperation("Get all questions with pagination")
     @GetMapping
-    @PreAuthorize("@el.check('question:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> getAll(QuestionDto criteria, Pageable pageable) {
         return new ResponseEntity<>(questionService.queryAll(criteria, pageable), HttpStatus.OK);
     }
     
     @ApiOperation("Get all questions for self-assessment")
     @GetMapping("/self-assessment")
-    @PreAuthorize("@el.check('question:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<List<QuestionDto>> getAllForSelfAssessment() {
         return new ResponseEntity<>(questionService.getAllForSelfAssessment(), HttpStatus.OK);
     }
     
     @ApiOperation("Get questions by category")
     @GetMapping("/category/{category}")
-    @PreAuthorize("@el.check('question:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<List<QuestionDto>> getByCategory(@PathVariable String category) {
         return new ResponseEntity<>(questionService.getByCategory(category), HttpStatus.OK);
     }
     
     @ApiOperation("Get question by ID")
     @GetMapping("/{id}")
-    @PreAuthorize("@el.check('question:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<QuestionDto> getById(@PathVariable Long id) {
         return new ResponseEntity<>(questionService.findById(id), HttpStatus.OK);
     }
     
     @ApiOperation("Create a new question")
     @PostMapping
-    @PreAuthorize("@el.check('question:add')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<QuestionDto> create(@Validated @RequestBody QuestionDto resources) {
         return new ResponseEntity<>(questionService.create(resources), HttpStatus.CREATED);
     }
     
     @ApiOperation("Update a question")
     @PutMapping
-    @PreAuthorize("@el.check('question:edit')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> update(@Validated @RequestBody QuestionDto resources) {
         ExecutionResult result = questionService.update(resources);
         return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
@@ -75,7 +73,7 @@ public class QuestionController {
     
     @ApiOperation("Delete a question")
     @DeleteMapping("/{id}")
-    @PreAuthorize("@el.check('question:del')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> delete(@PathVariable Long id) {
         ExecutionResult result = questionService.delete(id);
         return new ResponseEntity<>(result.toMap(), HttpStatus.OK);

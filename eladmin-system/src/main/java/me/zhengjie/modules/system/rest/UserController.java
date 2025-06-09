@@ -30,7 +30,6 @@ import me.zhengjie.modules.system.service.dto.RoleSmallDto;
 import me.zhengjie.modules.system.service.dto.UserDto;
 import me.zhengjie.modules.system.service.dto.UserQueryCriteria;
 import me.zhengjie.utils.PageResult;
-import me.zhengjie.utils.PageUtil;
 import me.zhengjie.utils.RsaUtils;
 import me.zhengjie.utils.SecurityUtils;
 import me.zhengjie.utils.enums.CodeEnum;
@@ -39,8 +38,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.ObjectUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -67,14 +64,14 @@ public class UserController {
 
     @ApiOperation("导出用户数据")
     @GetMapping(value = "/download")
-    @PreAuthorize("@el.check('user:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public void exportUser(HttpServletResponse response, UserQueryCriteria criteria) throws IOException {
         userService.download(userService.queryAll(criteria), response);
     }
 
     @ApiOperation("Query User")
     @GetMapping
-    @PreAuthorize("@el.check('user:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<PageResult<UserDto>> queryUser(UserQueryCriteria criteria, Pageable pageable) {
         // Get current user information
         UserDto currentUser = userService.findByName(SecurityUtils.getCurrentUsername());
@@ -92,7 +89,7 @@ public class UserController {
 
     @ApiOperation("获取单个用户")
     @GetMapping("/{id}")
-    @PreAuthorize("@el.check('user:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> getUser(@PathVariable Long id) {
         return new ResponseEntity<>(userService.findById(id), HttpStatus.OK);
     }
@@ -100,7 +97,7 @@ public class UserController {
     @Log("新增用户")
     @ApiOperation("新增用户")
     @PostMapping
-    @PreAuthorize("@el.check('user:add')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> createUser(@Validated @RequestBody User resources) {
         checkLevel(resources);
         // 默认密码 123456
@@ -112,7 +109,7 @@ public class UserController {
     @Log("修改用户")
     @ApiOperation("修改用户")
     @PutMapping
-    @PreAuthorize("@el.check('user:edit')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> updateUser(@Validated(User.Update.class) @RequestBody User resources) throws Exception {
         checkLevel(resources);
         userService.update(resources);
@@ -133,7 +130,7 @@ public class UserController {
     @Log("删除用户")
     @ApiOperation("删除用户")
     @DeleteMapping
-    @PreAuthorize("@el.check('user:del')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> deleteUser(@RequestBody Set<Long> ids) {
         for (Long id : ids) {
             Integer currentLevel = Collections.min(roleService.findByUsersId(SecurityUtils.getCurrentUserId())
@@ -170,6 +167,7 @@ public class UserController {
 
     @ApiOperation("重置密码")
     @PutMapping(value = "/resetPwd")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> resetPwd(@RequestBody Set<Long> ids) {
         String pwd = passwordEncoder.encode("123456");
         userService.resetPwd(ids, pwd);

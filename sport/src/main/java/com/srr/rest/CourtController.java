@@ -15,25 +15,22 @@
 */
 package com.srr.rest;
 
-import me.zhengjie.annotation.Log;
 import com.srr.domain.Court;
-import com.srr.service.CourtService;
+import com.srr.dto.CourtDto;
 import com.srr.dto.CourtQueryCriteria;
-import org.springframework.data.domain.Pageable;
+import com.srr.service.CourtService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import me.zhengjie.annotation.Log;
+import me.zhengjie.utils.ExecutionResult;
+import me.zhengjie.utils.PageResult;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import io.swagger.annotations.*;
-import java.io.IOException;
-import javax.servlet.http.HttpServletResponse;
-import me.zhengjie.utils.PageResult;
-import me.zhengjie.utils.ExecutionResult;
-import com.srr.dto.CourtDto;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
 * @website https://eladmin.vip
@@ -50,14 +47,14 @@ public class CourtController {
 
     @GetMapping
     @ApiOperation("Query court")
-    @PreAuthorize("@el.check('court:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<PageResult<CourtDto>> queryCourt(CourtQueryCriteria criteria, Pageable pageable){
         return new ResponseEntity<>(courtService.queryAll(criteria,pageable),HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
     @ApiOperation("Get court by ID")
-    @PreAuthorize("@el.check('court:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<CourtDto> getById(@PathVariable Long id) {
         return new ResponseEntity<>(courtService.findById(id), HttpStatus.OK);
     }
@@ -65,7 +62,7 @@ public class CourtController {
     @PostMapping
     @Log("Add court")
     @ApiOperation("Add court")
-    @PreAuthorize("@el.check('court:add')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> createCourt(@Validated @RequestBody Court resources){
         ExecutionResult result = courtService.create(resources);
         return new ResponseEntity<>(result.toMap(), HttpStatus.CREATED);
@@ -74,7 +71,7 @@ public class CourtController {
     @PutMapping
     @Log("Modify court")
     @ApiOperation("Modify court")
-    @PreAuthorize("@el.check('court:edit')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> updateCourt(@Validated @RequestBody Court resources){
         ExecutionResult result = courtService.update(resources);
         return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
@@ -83,7 +80,7 @@ public class CourtController {
     @DeleteMapping
     @Log("Delete court")
     @ApiOperation("Delete court")
-    @PreAuthorize("@el.check('court:del')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> deleteCourt(@RequestBody Long[] ids) {
         ExecutionResult result = courtService.deleteAll(ids);
         return new ResponseEntity<>(result.toMap(), HttpStatus.OK);

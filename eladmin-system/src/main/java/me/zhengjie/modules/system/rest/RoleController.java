@@ -20,8 +20,8 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import me.zhengjie.annotation.Log;
-import me.zhengjie.modules.system.domain.Role;
 import me.zhengjie.exception.BadRequestException;
+import me.zhengjie.modules.system.domain.Role;
 import me.zhengjie.modules.system.service.RoleService;
 import me.zhengjie.modules.system.service.dto.RoleDto;
 import me.zhengjie.modules.system.service.dto.RoleQueryCriteria;
@@ -34,6 +34,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Collections;
@@ -57,28 +58,28 @@ public class RoleController {
 
     @ApiOperation("获取单个role")
     @GetMapping(value = "/{id}")
-    @PreAuthorize("@el.check('roles:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<RoleDto> findRoleById(@PathVariable Long id){
         return new ResponseEntity<>(roleService.findById(id), HttpStatus.OK);
     }
 
     @ApiOperation("导出角色数据")
     @GetMapping(value = "/download")
-    @PreAuthorize("@el.check('role:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public void exportRole(HttpServletResponse response, RoleQueryCriteria criteria) throws IOException {
         roleService.download(roleService.queryAll(criteria), response);
     }
 
     @ApiOperation("返回全部的角色")
     @GetMapping(value = "/all")
-    @PreAuthorize("@el.check('roles:list','user:add','user:edit')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<List<RoleDto>> queryAllRole(){
         return new ResponseEntity<>(roleService.queryAll(),HttpStatus.OK);
     }
 
     @ApiOperation("查询角色")
     @GetMapping
-    @PreAuthorize("@el.check('roles:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<PageResult<RoleDto>> queryRole(RoleQueryCriteria criteria, Pageable pageable){
         return new ResponseEntity<>(roleService.queryAll(criteria,pageable),HttpStatus.OK);
     }
@@ -92,7 +93,7 @@ public class RoleController {
     @Log("新增角色")
     @ApiOperation("新增角色")
     @PostMapping
-    @PreAuthorize("@el.check('roles:add')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> createRole(@Validated @RequestBody Role resources){
         if (resources.getId() != null) {
             throw new BadRequestException("A new "+ ENTITY_NAME +" cannot already have an ID");
@@ -105,7 +106,7 @@ public class RoleController {
     @Log("修改角色")
     @ApiOperation("修改角色")
     @PutMapping
-    @PreAuthorize("@el.check('roles:edit')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> updateRole(@Validated(Role.Update.class) @RequestBody Role resources){
         getLevels(resources.getLevel());
         roleService.update(resources);
@@ -115,7 +116,7 @@ public class RoleController {
     @Log("修改角色菜单")
     @ApiOperation("修改角色菜单")
     @PutMapping(value = "/menu")
-    @PreAuthorize("@el.check('roles:edit')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> updateRoleMenu(@RequestBody Role resources){
         RoleDto role = roleService.findById(resources.getId());
         getLevels(role.getLevel());
@@ -126,7 +127,7 @@ public class RoleController {
     @Log("删除角色")
     @ApiOperation("删除角色")
     @DeleteMapping
-    @PreAuthorize("@el.check('roles:del')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> deleteRole(@RequestBody Set<Long> ids){
         for (Long id : ids) {
             RoleDto role = roleService.findById(id);

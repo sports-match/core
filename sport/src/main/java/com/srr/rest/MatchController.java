@@ -31,7 +31,7 @@ public class MatchController {
 
     @ApiOperation("Get match by ID")
     @GetMapping("/{id}")
-    @PreAuthorize("@el.check('event:list')")
+    @PreAuthorize("hasAuthority('Organizer')")
     public ResponseEntity<MatchDto> getMatch(@PathVariable Long id) {
         Match match = matchService.findById(id);
         return new ResponseEntity<>(matchMapper.toDto(match), HttpStatus.OK);
@@ -39,7 +39,7 @@ public class MatchController {
     
     @ApiOperation("Get all matches for the current user")
     @GetMapping("/my-matches")
-    @PreAuthorize("@el.check('event:list')")
+    @PreAuthorize("hasAuthority('Organizer')")
     public ResponseEntity<List<MatchDto>> getMyMatches() {
         List<Match> matches = matchService.findMatchesForCurrentUser();
         List<MatchDto> result = matches.stream()
@@ -50,7 +50,7 @@ public class MatchController {
 
     @ApiOperation("Update match score")
     @PutMapping("/{matchId}/score")
-    @PreAuthorize("@el.check('event:list')")
+    @PreAuthorize("hasAuthority('Organizer')")
     public ResponseEntity<MatchDto> updateMatchScore(
             @PathVariable Long matchId,
             @Validated @RequestBody MatchScoreUpdateDto scoreDto) {
@@ -64,7 +64,7 @@ public class MatchController {
 
     @ApiOperation("Verify match score (admin only)")
     @PutMapping("/{id}/verify")
-    @PreAuthorize("@el.check('event:admin')")
+    @PreAuthorize("hasAuthority('Organizer')")
     public ResponseEntity<MatchDto> verifyMatchScore(@PathVariable Long id) {
         Match match = matchService.verifyMatchScore(id);
         return new ResponseEntity<>(matchMapper.toDto(match), HttpStatus.OK);

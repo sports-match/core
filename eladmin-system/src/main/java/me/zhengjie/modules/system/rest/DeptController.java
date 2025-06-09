@@ -15,7 +15,6 @@
  */
 package me.zhengjie.modules.system.rest;
 
-import cn.hutool.core.collection.CollectionUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
@@ -32,9 +31,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
 import javax.servlet.http.HttpServletResponse;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
 * @author Zheng Jie
@@ -51,44 +53,39 @@ public class DeptController {
 
     @ApiOperation("导出部门数据")
     @GetMapping(value = "/download")
-    @PreAuthorize("@el.check('dept:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public void exportDept(HttpServletResponse response, DeptQueryCriteria criteria) throws Exception {
         deptService.download(deptService.queryAll(criteria, false), response);
     }
 
     @ApiOperation("查询部门")
     @GetMapping
-    @PreAuthorize("@el.check('user:list','dept:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<PageResult<DeptDto>> queryDept(DeptQueryCriteria criteria) throws Exception {
-        List<DeptDto> depts = deptService.queryAll(criteria, true);
-        return new ResponseEntity<>(PageUtil.toPage(depts, depts.size()),HttpStatus.OK);
+        List<DeptDto> deptDtos = deptService.queryAll(criteria, true);
+        return new ResponseEntity<>(PageUtil.toPage(deptDtos, deptDtos.size()),HttpStatus.OK);
     }
 
-    @ApiOperation("查询部门:根据ID获取同级与上级数据")
+    @ApiOperation("查询部门：根据ID获取同级与上级数据")
     @PostMapping("/superior")
-    @PreAuthorize("@el.check('user:list','dept:list')")
-    public ResponseEntity<Object> getDeptSuperior(@RequestBody List<Long> ids,
-                                                  @RequestParam(defaultValue = "false") Boolean exclude) {
-        Set<DeptDto> deptSet  = new LinkedHashSet<>();
+    @PreAuthorize("hasAuthority('Admin')")
+    public ResponseEntity<Object> getDeptSuperior(@RequestBody List<Long> ids) {
+        Set<DeptDto> deptDtos  = new LinkedHashSet<>();
         for (Long id : ids) {
             DeptDto deptDto = deptService.findById(id);
             List<DeptDto> depts = deptService.getSuperior(deptDto, new ArrayList<>());
-            if(exclude){
-                // 编辑部门时不显示自己以及自己下级的数据，避免出现PID数据环形问题
-                depts = depts.stream().filter(i -> !ids.contains(i.getId())).collect(Collectors.toList());
-            }
-            deptSet.addAll(depts);
+            deptDtos.addAll(depts);
         }
-        return new ResponseEntity<>(deptService.buildTree(new ArrayList<>(deptSet)),HttpStatus.OK);
+        return new ResponseEntity<>(deptService.buildTree(new ArrayList<>(deptDtos)),HttpStatus.OK);
     }
 
     @Log("新增部门")
     @ApiOperation("新增部门")
     @PostMapping
-    @PreAuthorize("@el.check('dept:add')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> createDept(@Validated @RequestBody Dept resources){
         if (resources.getId() != null) {
-            throw new BadRequestException("A new "+ ENTITY_NAME +" cannot already have an ID");
+            throw new BadRequestException("A new " + ENTITY_NAME + " cannot already have an ID");
         }
         deptService.create(resources);
         return new ResponseEntity<>(HttpStatus.CREATED);
@@ -97,21 +94,9 @@ public class DeptController {
     @Log("修改部门")
     @ApiOperation("修改部门")
     @PutMapping
-    @PreAuthorize("@el.check('dept:edit')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> updateDept(@Validated(Dept.Update.class) @RequestBody Dept resources){
         deptService.update(resources);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-    }
-
-    @Log("删除部门")
-    @ApiOperation("删除部门")
-    @DeleteMapping
-    @PreAuthorize("@el.check('dept:del')")
-    public ResponseEntity<Object> deleteDept(@RequestBody Set<Long> ids){
-        Set<DeptDto> deptDtos = new HashSet<>();
-        // 验证是否被角色或用户关联
-        deptService.verification(deptDtos);
-        deptService.delete(deptDtos);
-        return new ResponseEntity<>(HttpStatus.OK);
     }
 }

@@ -30,68 +30,70 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Set;
 
 /**
-* @author zhanghouying
-* @date 2019-08-24
-*/
+ * @author zhanghouying
+ * @date 2019-08-24
+ */
 @RestController
-@Api(tags = "Ops: Server Management")
+@Api(tags = "运维：服务器部署")
 @RequiredArgsConstructor
 @RequestMapping("/api/serverDeploy")
 public class ServerDeployController {
 
     private final ServerDeployService serverDeployService;
 
-    @ApiOperation("Export server data")
+    @ApiOperation("导出服务器部署数据")
     @GetMapping(value = "/download")
-    @PreAuthorize("@el.check('serverDeploy:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public void exportServerDeploy(HttpServletResponse response, ServerDeployQueryCriteria criteria) throws IOException {
         serverDeployService.download(serverDeployService.queryAll(criteria), response);
     }
 
-    @ApiOperation(value = "Query server")
+    @ApiOperation(value = "查询服务器部署")
     @GetMapping
-    @PreAuthorize("@el.check('serverDeploy:list')")
-    public ResponseEntity<PageResult<ServerDeployDto>> queryServerDeploy(ServerDeployQueryCriteria criteria, Pageable pageable){
-        return new ResponseEntity<>(serverDeployService.queryAll(criteria,pageable),HttpStatus.OK);
+    @PreAuthorize("hasAuthority('Admin')")
+    public ResponseEntity<PageResult<ServerDeployDto>> queryServerDeploy(ServerDeployQueryCriteria criteria, Pageable pageable) {
+        return new ResponseEntity<>(serverDeployService.queryAll(criteria, pageable), HttpStatus.OK);
     }
 
-    @Log("Add server")
-    @ApiOperation(value = "Add server")
+    @Log("新增服务器部署")
+    @ApiOperation(value = "新增服务器部署")
     @PostMapping
-    @PreAuthorize("@el.check('serverDeploy:add')")
-    public ResponseEntity<Object> createServerDeploy(@Validated @RequestBody ServerDeploy resources){
+    @PreAuthorize("hasAuthority('Admin')")
+    public ResponseEntity<Object> createServerDeploy(@Validated @RequestBody ServerDeploy resources) {
         serverDeployService.create(resources);
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
-    @Log("Update server")
-    @ApiOperation(value = "Update server")
+    @Log("修改服务器部署")
+    @ApiOperation(value = "修改服务器部署")
     @PutMapping
-    @PreAuthorize("@el.check('serverDeploy:edit')")
-    public ResponseEntity<Object> updateServerDeploy(@Validated @RequestBody ServerDeploy resources){
+    @PreAuthorize("hasAuthority('Admin')")
+    public ResponseEntity<Object> updateServerDeploy(@Validated @RequestBody ServerDeploy resources) {
         serverDeployService.update(resources);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
-    @Log("Delete server")
-    @ApiOperation(value = "Delete Server")
+    @Log("删除服务器部署")
+    @ApiOperation(value = "删除服务器部署")
     @DeleteMapping
-    @PreAuthorize("@el.check('serverDeploy:del')")
-    public ResponseEntity<Object> deleteServerDeploy(@RequestBody Set<Long> ids){
+    @PreAuthorize("hasAuthority('Admin')")
+    public ResponseEntity<Object> deleteServerDeploy(@RequestBody Set<Long> ids) {
         serverDeployService.delete(ids);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    @Log("Test server connection")
-    @ApiOperation(value = "Test server connection")
-    @PostMapping("/testConnect")
-    @PreAuthorize("@el.check('serverDeploy:add')")
-    public ResponseEntity<Object> testConnectServerDeploy(@Validated @RequestBody ServerDeploy resources){
-        return new ResponseEntity<>(serverDeployService.testConnect(resources),HttpStatus.CREATED);
+    @Log("测试连接服务器")
+    @ApiOperation(value = "测试连接服务器")
+    @PostMapping(value = "/testConnect")
+    @PreAuthorize("hasAuthority('Admin')")
+    public ResponseEntity<Object> testConnectServerDeploy(@Validated @RequestBody ServerDeploy resources) {
+        Boolean result = serverDeployService.testConnect(resources);
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

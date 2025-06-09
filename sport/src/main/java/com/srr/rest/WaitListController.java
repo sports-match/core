@@ -31,8 +31,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +42,7 @@ import java.util.Map;
 @RestController
 @RequiredArgsConstructor
 @Api(tags = "Wait List Management")
-@RequestMapping("/api/wait-lists")
+@RequestMapping("/api/waitlists")
 public class WaitListController {
 
     private final WaitListService waitListService;
@@ -52,35 +50,35 @@ public class WaitListController {
 
     @ApiOperation("Query wait list entries")
     @GetMapping
-    @PreAuthorize("@el.check('waitList:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<PageResult<WaitListDto>> queryWaitList(WaitListQueryCriteria criteria, Pageable pageable) {
         return new ResponseEntity<>(waitListService.queryAll(criteria, pageable), HttpStatus.OK);
     }
 
     @ApiOperation("Query wait list entries by event ID")
     @GetMapping(value = "/event/{eventId}")
-    @PreAuthorize("@el.check('waitList:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<List<WaitListDto>> queryWaitListByEvent(@PathVariable Long eventId) {
         return new ResponseEntity<>(waitListService.findByEventId(eventId), HttpStatus.OK);
     }
 
     @ApiOperation("Query wait list entries by player ID")
     @GetMapping(value = "/player/{playerId}")
-    @PreAuthorize("@el.check('waitList:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<List<WaitListDto>> queryWaitListByPlayer(@PathVariable Long playerId) {
         return new ResponseEntity<>(waitListService.findByPlayerId(playerId), HttpStatus.OK);
     }
 
     @ApiOperation("Get wait list entry by ID")
     @GetMapping("/{id}")
-    @PreAuthorize("@el.check('waitList:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<WaitListDto> getById(@PathVariable Long id) {
         return new ResponseEntity<>(waitListService.findById(id), HttpStatus.OK);
     }
 
     @ApiOperation("Add to wait list")
     @PostMapping
-    @PreAuthorize("@el.check('waitList:add')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> create(@Validated @RequestBody WaitList resources) {
         ExecutionResult result = waitListService.create(resources);
         return new ResponseEntity<>(result.toMap(), HttpStatus.CREATED);
@@ -88,7 +86,7 @@ public class WaitListController {
 
     @ApiOperation("Update wait list entry")
     @PutMapping
-    @PreAuthorize("@el.check('waitList:edit')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> update(@Validated @RequestBody WaitList resources) {
         ExecutionResult result = waitListService.update(resources);
         return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
@@ -96,7 +94,7 @@ public class WaitListController {
 
     @ApiOperation("Promote player from wait list to participant")
     @PutMapping(value = "/{id}/promote")
-    @PreAuthorize("@el.check('waitList:edit')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> promoteWaitListEntry(@PathVariable Long id) {
         boolean success = waitListService.promoteToParticipant(id);
         if (success) {
@@ -111,7 +109,7 @@ public class WaitListController {
 
     @ApiOperation("Delete wait list entry")
     @DeleteMapping(value = "/{id}")
-    @PreAuthorize("@el.check('waitList:del')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> deleteWaitList(@PathVariable Long id) {
         ExecutionResult result = waitListService.delete(id);
         return new ResponseEntity<>(result.toMap(), HttpStatus.OK);

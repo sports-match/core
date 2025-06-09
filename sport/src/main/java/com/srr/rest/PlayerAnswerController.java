@@ -13,9 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
 * @description PlayerAnswer controller for API endpoints
@@ -32,21 +30,21 @@ public class PlayerAnswerController {
     
     @ApiOperation("Get all player answers with pagination")
     @GetMapping
-    @PreAuthorize("@el.check('player-answer:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> getAll(PlayerAnswerDto criteria, Pageable pageable) {
         return new ResponseEntity<>(playerAnswerService.queryAll(criteria, pageable), HttpStatus.OK);
     }
     
     @ApiOperation("Get all answers for a player")
     @GetMapping("/player/{playerId}")
-    @PreAuthorize("@el.check('player-answer:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<List<PlayerAnswerDto>> getByPlayerId(@PathVariable Long playerId) {
         return new ResponseEntity<>(playerAnswerService.getByPlayerId(playerId), HttpStatus.OK);
     }
     
     @ApiOperation("Get answers by player ID and question category")
     @GetMapping("/player/{playerId}/category/{category}")
-    @PreAuthorize("@el.check('player-answer:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<List<PlayerAnswerDto>> getByPlayerIdAndCategory(
             @PathVariable Long playerId, 
             @PathVariable String category) {
@@ -57,7 +55,7 @@ public class PlayerAnswerController {
     
     @ApiOperation("Submit player self-assessment answers")
     @PostMapping("/submit-assessment")
-    @PreAuthorize("@el.check('player-answer:create')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<List<PlayerAnswerDto>> submitSelfAssessment(
             @Validated @RequestBody List<PlayerAnswerDto> answers) {
         return new ResponseEntity<>(
@@ -67,7 +65,7 @@ public class PlayerAnswerController {
     
     @ApiOperation("Check if player has completed self-assessment")
     @GetMapping("/player/{playerId}/completed")
-    @PreAuthorize("@el.check('player-answer:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Boolean> hasCompletedSelfAssessment(@PathVariable Long playerId) {
         return new ResponseEntity<>(
                 playerAnswerService.hasCompletedSelfAssessment(playerId), 
@@ -76,21 +74,21 @@ public class PlayerAnswerController {
     
     @ApiOperation("Get player answer by ID")
     @GetMapping("/{id}")
-    @PreAuthorize("@el.check('player-answer:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<PlayerAnswerDto> getById(@PathVariable Long id) {
         return new ResponseEntity<>(playerAnswerService.findById(id), HttpStatus.OK);
     }
     
     @ApiOperation("Create a new player answer")
     @PostMapping
-    @PreAuthorize("@el.check('player-answer:add')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<ExecutionResult> create(@Validated @RequestBody PlayerAnswerDto resources) {
         return new ResponseEntity<>(playerAnswerService.create(resources), HttpStatus.CREATED);
     }
     
     @ApiOperation("Update a player answer")
     @PutMapping
-    @PreAuthorize("@el.check('player-answer:edit')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> update(@Validated @RequestBody PlayerAnswerDto resources) {
         ExecutionResult result = playerAnswerService.update(resources);
         return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
@@ -98,7 +96,7 @@ public class PlayerAnswerController {
     
     @ApiOperation("Delete a player answer")
     @DeleteMapping("/{id}")
-    @PreAuthorize("@el.check('player-answer:del')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> delete(@PathVariable Long id) {
         ExecutionResult result = playerAnswerService.delete(id);
         return new ResponseEntity<>(result.toMap(), HttpStatus.OK);

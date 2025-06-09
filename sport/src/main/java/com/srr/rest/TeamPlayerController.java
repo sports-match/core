@@ -43,7 +43,7 @@ public class TeamPlayerController {
 
     @GetMapping("/{id}")
     @ApiOperation("Get team player details")
-    @PreAuthorize("@el.check('event:list')")
+    @PreAuthorize("hasAuthority('Organizer')")
     public ResponseEntity<TeamPlayerDto> getTeamPlayer(@PathVariable Long id) {
         return new ResponseEntity<>(teamPlayerService.findById(id), HttpStatus.OK);
     }
@@ -51,7 +51,7 @@ public class TeamPlayerController {
     @PutMapping("/{id}/check-in")
     @Log("Check in player")
     @ApiOperation("Check in player for an event")
-    @PreAuthorize("@el.check('event:edit')")
+    @PreAuthorize("hasAuthority('Organizer')")
     public ResponseEntity<TeamPlayerDto> checkIn(@PathVariable Long id) {
         return new ResponseEntity<>(teamPlayerService.checkIn(id), HttpStatus.OK);
     }
@@ -59,7 +59,7 @@ public class TeamPlayerController {
     @PostMapping("/reassign")
     @Log("Reassign player to another team")
     @ApiOperation("Reassign player to another team")
-    @PreAuthorize("@el.check('event:admin')")
+    @PreAuthorize("hasAuthority('Organizer')")
     public ResponseEntity<TeamPlayerDto> reassignPlayer(@Validated @RequestBody TeamPlayerReassignDto dto) {
         return new ResponseEntity<>(teamPlayerService.reassignPlayer(dto), HttpStatus.OK);
     }

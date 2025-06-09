@@ -15,26 +15,23 @@
 */
 package com.srr.rest;
 
+import com.srr.domain.Club;
+import com.srr.dto.ClubDto;
+import com.srr.dto.ClubQueryCriteria;
+import com.srr.service.ClubService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.annotation.Log;
-import com.srr.domain.Club;
-import com.srr.service.ClubService;
-import com.srr.dto.ClubQueryCriteria;
+import me.zhengjie.utils.ExecutionResult;
+import me.zhengjie.utils.PageResult;
 import org.springframework.data.domain.Pageable;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import io.swagger.annotations.*;
-import java.io.IOException;
-import javax.servlet.http.HttpServletResponse;
-import me.zhengjie.utils.PageResult;
-import me.zhengjie.utils.ExecutionResult;
-import com.srr.dto.ClubDto;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
 * @website https://eladmin.vip
@@ -52,14 +49,14 @@ public class ClubController {
 
     @GetMapping
     @ApiOperation("Query clubs")
-    @PreAuthorize("@el.check('club:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<PageResult<ClubDto>> queryClub(ClubQueryCriteria criteria, Pageable pageable){
         return new ResponseEntity<>(clubService.queryAll(criteria,pageable),HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
     @ApiOperation("Get club by ID")
-    @PreAuthorize("@el.check('club:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<ClubDto> getById(@PathVariable Long id) {
         return new ResponseEntity<>(clubService.findById(id), HttpStatus.OK);
     }
@@ -67,7 +64,7 @@ public class ClubController {
     @PostMapping
     @Log("Add clubs")
     @ApiOperation("Add clubs")
-    @PreAuthorize("@el.check('club:add')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> createClub(@Validated @RequestBody Club resources){
         ExecutionResult result = clubService.create(resources);
         return new ResponseEntity<>(result.toMap(), HttpStatus.CREATED);
@@ -76,7 +73,7 @@ public class ClubController {
     @PutMapping
     @Log("Modify clubs")
     @ApiOperation("Modify clubs")
-    @PreAuthorize("@el.check('club:edit')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> updateClub(@Validated @RequestBody Club resources){
         ExecutionResult result = clubService.update(resources);
         return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
@@ -85,7 +82,7 @@ public class ClubController {
     @DeleteMapping
     @Log("Delete clubs")
     @ApiOperation("Delete clubs")
-    @PreAuthorize("@el.check('club:del')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> deleteClub(@RequestBody Long[] ids) {
         ExecutionResult result = clubService.deleteAll(ids);
         return new ResponseEntity<>(result.toMap(), HttpStatus.OK);

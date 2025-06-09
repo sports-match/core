@@ -15,26 +15,23 @@
 */
 package com.srr.rest;
 
-import me.zhengjie.annotation.Log;
 import com.srr.domain.Sport;
-import com.srr.service.SportService;
+import com.srr.dto.SportDto;
 import com.srr.dto.SportQueryCriteria;
-import me.zhengjie.annotation.rest.AnonymousGetMapping;
-import org.springframework.data.domain.Pageable;
+import com.srr.service.SportService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import me.zhengjie.annotation.Log;
+import me.zhengjie.annotation.rest.AnonymousGetMapping;
+import me.zhengjie.utils.ExecutionResult;
+import me.zhengjie.utils.PageResult;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import io.swagger.annotations.*;
-import java.io.IOException;
-import javax.servlet.http.HttpServletResponse;
-import me.zhengjie.utils.PageResult;
-import me.zhengjie.utils.ExecutionResult;
-import com.srr.dto.SportDto;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
 * @website https://eladmin.vip
@@ -57,14 +54,14 @@ public class SportController {
 
     @GetMapping
     @ApiOperation("Query sport")
-    @PreAuthorize("@el.check('sport:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<PageResult<SportDto>> querySport(SportQueryCriteria criteria, Pageable pageable){
         return new ResponseEntity<>(sportService.queryAll(criteria,pageable),HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
     @ApiOperation("Get sport by ID")
-    @PreAuthorize("@el.check('sport:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<SportDto> getById(@PathVariable Long id) {
         return new ResponseEntity<>(sportService.findById(id), HttpStatus.OK);
     }
@@ -72,7 +69,7 @@ public class SportController {
     @PostMapping
     @Log("Add sport")
     @ApiOperation("Add sport")
-    @PreAuthorize("@el.check('sport:add')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> createSport(@Validated @RequestBody Sport resources){
         ExecutionResult result = sportService.create(resources);
         return new ResponseEntity<>(result.toMap(), HttpStatus.CREATED);
@@ -81,7 +78,7 @@ public class SportController {
     @PutMapping
     @Log("Modify sport")
     @ApiOperation("Modify sport")
-    @PreAuthorize("@el.check('sport:edit')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> updateSport(@Validated @RequestBody Sport resources){
         ExecutionResult result = sportService.update(resources);
         return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
@@ -90,7 +87,7 @@ public class SportController {
     @DeleteMapping
     @Log("Delete sport")
     @ApiOperation("Delete sport")
-    @PreAuthorize("@el.check('sport:del')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> deleteSport(@RequestBody Long[] ids) {
         ExecutionResult result = sportService.deleteAll(ids);
         return new ResponseEntity<>(result.toMap(), HttpStatus.OK);

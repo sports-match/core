@@ -24,7 +24,6 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import me.zhengjie.annotation.Log;
-import me.zhengjie.utils.ExecutionResult;
 import me.zhengjie.utils.PageResult;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -46,31 +45,31 @@ public class PlayerController {
     private final PlayerService playerService;
 
     @GetMapping
-    @ApiOperation("Query sport")
-    @PreAuthorize("@el.check('player:list')")
+    @ApiOperation("Query player")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<PageResult<PlayerDto>> queryPlayer(PlayerQueryCriteria criteria, Pageable pageable){
         return new ResponseEntity<>(playerService.queryAll(criteria,pageable),HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
     @ApiOperation("Get player by ID")
-    @PreAuthorize("@el.check('player:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<PlayerDto> getById(@PathVariable Long id) {
         return new ResponseEntity<>(playerService.findById(id), HttpStatus.OK);
     }
 
     @PutMapping
-    @Log("Edit player")
-    @ApiOperation("Edit player")
-    @PreAuthorize("@el.check('player:edit')")
+    @Log("Modify player")
+    @ApiOperation("Modify player")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> updatePlayer(@Validated @RequestBody Player resources){
-        ExecutionResult result = playerService.update(resources);
-        return new ResponseEntity<>(result.toMap(), HttpStatus.OK);
+        playerService.update(resources);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
     
     @GetMapping("/assessment-status")
     @ApiOperation("Check if player has completed self-assessment")
-    @PreAuthorize("@el.check('player:list')")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<PlayerAssessmentStatusDto> checkAssessmentStatus() {
         PlayerAssessmentStatusDto status = playerService.checkAssessmentStatus();
         return new ResponseEntity<>(status, HttpStatus.OK);
