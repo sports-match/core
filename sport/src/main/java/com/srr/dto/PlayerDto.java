@@ -15,10 +15,13 @@
 */
 package com.srr.dto;
 
-import lombok.Data;
-import java.sql.Timestamp;
-import java.io.Serializable;
+import com.srr.enumeration.Gender;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Data;
+
+import java.io.Serializable;
+import java.sql.Timestamp;
+import java.time.LocalDate;
 
 /**
 * @website https://eladmin.vip
@@ -58,4 +61,10 @@ public class PlayerDto implements Serializable {
 
     @ApiModelProperty(value = "userId")
     private Long userId;
+
+    @ApiModelProperty(value = "性别")
+    private Gender gender;
+
+    @ApiModelProperty(value = "出生日期")
+    private LocalDate dateOfBirth;
 }

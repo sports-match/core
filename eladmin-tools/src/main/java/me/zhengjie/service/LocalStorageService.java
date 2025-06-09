@@ -80,4 +80,12 @@ public interface LocalStorageService {
      * @throws IOException /
      */
     void download(List<LocalStorageDto> localStorageDtos, HttpServletResponse response) throws IOException;
+
+    /**
+     * Stream file to response
+     * @param realName the real name of the file
+     * @param response HttpServletResponse
+     * @throws IOException if an I/O error occurs
+     */
+    void streamFile(String realName, HttpServletResponse response) throws IOException;
 }
