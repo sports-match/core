@@ -1,6 +1,7 @@
 package com.srr.service;
 
 import com.srr.domain.EventOrganizer;
+import com.srr.enumeration.VerificationStatus;
 import me.zhengjie.utils.ExecutionResult;
 
 import java.util.List;
@@ -23,4 +24,12 @@ public interface EventOrganizerService {
      * @return List of event organizers associated with the user
      */
     List<EventOrganizer> findByUserId(Long userId);
+
+    /**
+     * Update the verification status of an event organizer.
+     * @param organizerId The ID of the event organizer to update.
+     * @param status The new verification status.
+     * @return ExecutionResult containing the updated entity's ID.
+     */
+    ExecutionResult updateVerificationStatus(Long organizerId, VerificationStatus status);
 }

@@ -31,4 +31,6 @@ public class UserRegisterDto implements Serializable {
     
     @NotNull(message = "User type cannot be blank")
     private UserType userType;
+    
+    private Long clubId; // Optional: ID of the club the organizer wants to be linked to
 }
