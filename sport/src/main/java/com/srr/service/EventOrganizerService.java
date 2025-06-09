@@ -2,9 +2,11 @@ package com.srr.service;
 
 import com.srr.domain.EventOrganizer;
 import com.srr.enumeration.VerificationStatus;
+import com.srr.domain.Club;
 import me.zhengjie.utils.ExecutionResult;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Service for managing event organizers
@@ -32,4 +34,18 @@ public interface EventOrganizerService {
      * @return ExecutionResult containing the updated entity's ID.
      */
     ExecutionResult updateVerificationStatus(Long organizerId, VerificationStatus status);
+
+    /**
+     * Link clubs to an event organizer
+     * @param organizerId The ID of the event organizer
+     * @param clubIds The IDs of the clubs to link
+     */
+    void linkClubs(Long organizerId, List<Long> clubIds);
+
+    /**
+     * Get the clubs associated with an event organizer
+     * @param organizerId The ID of the event organizer
+     * @return Set of clubs associated with the event organizer
+     */
+    Set<Club> getClubs(Long organizerId);
 }

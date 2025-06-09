@@ -1,8 +1,11 @@
 package com.srr.service.impl;
 
 import com.srr.domain.Question;
+import com.srr.domain.Sport;
+import com.srr.domain.MatchFormat;
 import com.srr.dto.QuestionDto;
 import com.srr.repository.QuestionRepository;
+import com.srr.repository.SportRepository;
 import com.srr.service.QuestionService;
 import lombok.RequiredArgsConstructor;
 import me.zhengjie.exception.BadRequestException;
@@ -31,6 +34,7 @@ import java.util.stream.Collectors;
 public class QuestionServiceImpl implements QuestionService {
 
     private final QuestionRepository questionRepository;
+    private final SportRepository sportRepository;
 
     @Override
     public PageResult<QuestionDto> queryAll(QuestionDto criteria, Pageable pageable) {
@@ -41,7 +45,8 @@ public class QuestionServiceImpl implements QuestionService {
 
     @Override
     public List<QuestionDto> getAllForSelfAssessment() {
-        return questionRepository.findAllOrdered().stream()
+        Long sportId = getSportIdByName("badminton");
+        return questionRepository.findBySportIdAndFormatOrderByCategoryAndOrderIndex(sportId, MatchFormat.DOUBLES).stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
@@ -112,5 +117,13 @@ public class QuestionServiceImpl implements QuestionService {
         dto.setCreateTime(question.getCreateTime());
         dto.setUpdateTime(question.getUpdateTime());
         return dto;
+    }
+
+    private Long getSportIdByName(String sportName) {
+        return sportRepository.findAll().stream()
+            .filter(s -> s.getName().equalsIgnoreCase(sportName))
+            .findFirst()
+            .map(Sport::getId)
+            .orElseThrow(() -> new BadRequestException("Sport not found: " + sportName));
     }
 }

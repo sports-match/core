@@ -40,6 +40,16 @@ public class Question implements Serializable {
     @ApiModelProperty(value = "Question category")
     private String category;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sport_id", referencedColumnName = "id")
+    @ApiModelProperty(value = "Sport")
+    private Sport sport;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "format", nullable = false)
+    @ApiModelProperty(value = "Format (singles/doubles)")
+    private MatchFormat format;
+
     @Column(name = "order_index")
     @ApiModelProperty(value = "Display order")
     private Integer orderIndex;

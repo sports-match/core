@@ -46,6 +46,11 @@ public interface PlayerAnswerService {
     List<PlayerAnswerDto> submitSelfAssessment(List<PlayerAnswerDto> answers);
     
     /**
+     * Overloaded: Submit self-assessment with sport/format
+     */
+    List<PlayerAnswerDto> submitSelfAssessment(List<PlayerAnswerDto> answers, String sport, String format);
+    
+    /**
      * Create a new player answer
      * @param resources PlayerAnswerDto object
      * @return Created PlayerAnswerDto

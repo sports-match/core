@@ -153,6 +153,10 @@ public class Event implements Serializable {
     @Convert(converter = StringListConverter.class)
     private List<String> tags = new ArrayList<>();
 
+    @ManyToOne
+    @JoinColumn(name = "organizer_id")
+    private EventOrganizer organizer;
+
     @ManyToMany
     @JoinTable(name = "event_co_host_player",
             joinColumns = {@JoinColumn(name = "event_id",referencedColumnName = "id")},
