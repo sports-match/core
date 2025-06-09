@@ -47,9 +47,6 @@ import me.zhengjie.utils.RedisUtils;
 import me.zhengjie.utils.SecurityUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.annotation.Validated;
@@ -57,12 +54,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -241,7 +233,7 @@ public class AuthController {
                         .orElseThrow(() -> new EntityNotFoundException(Club.class, "id", registerDto.getClubId()));
                 EventOrganizer eventOrganizer = new EventOrganizer();
                 eventOrganizer.setUserId(newUserId);
-                eventOrganizer.setClub(club);
+                eventOrganizer.addClub(club);
                 // verificationStatus will default to PENDING as per EventOrganizer entity
                 eventOrganizerService.create(eventOrganizer);
             } else {
@@ -255,7 +247,7 @@ public class AuthController {
         }
 
         // Send verification email
-        EmailVo emailVo = sendEmail(registerDto.getEmail());
+        sendEmail(registerDto.getEmail());
 
         Map<String, Object> response = new HashMap<>();
         response.put("userId", newUserId);
@@ -267,18 +259,17 @@ public class AuthController {
         // --- Add entity id if created (playerId or organizerId) ---
         if (registerDto.getUserType() != null) {
             if (registerDto.getUserType().name().equals("PLAYER")) {
-                Player player = playerService.findByUserId(result.id());
+                Player player = playerService.findByUserId(executionResult.id());
                 if (player != null) {
                     response.put("playerId", player.getId());
                 }
             } else if (registerDto.getUserType().name().equals("ORGANIZER")) {
-                List<EventOrganizer> organizers = eventOrganizerService.findByUserId(result.id());
+                List<EventOrganizer> organizers = eventOrganizerService.findByUserId(executionResult.id());
                 if (organizers != null && !organizers.isEmpty()) {
                     response.put("organizerId", organizers.get(0).getId());
                 }
             }
         }
-        // ---------------------------------------------------------
 
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
