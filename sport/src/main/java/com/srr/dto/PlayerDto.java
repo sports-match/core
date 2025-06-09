@@ -18,6 +18,7 @@ package com.srr.dto;
 import lombok.Data;
 import java.sql.Timestamp;
 import java.io.Serializable;
+import java.util.List;
 import io.swagger.annotations.ApiModelProperty;
 
 /**
@@ -58,4 +59,7 @@ public class PlayerDto implements Serializable {
 
     @ApiModelProperty(value = "userId")
     private Long userId;
+
+    @ApiModelProperty(value = "各运动评分")
+    private List<com.srr.dto.PlayerSportRatingDto> sportRatings;
 }

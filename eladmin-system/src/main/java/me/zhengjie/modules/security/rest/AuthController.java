@@ -18,7 +18,9 @@ package me.zhengjie.modules.security.rest;
 import cn.hutool.core.util.IdUtil;
 import com.srr.domain.EventOrganizer;
 import com.srr.domain.Player;
+import com.srr.domain.PlayerSportRating;
 import com.srr.dto.PlayerAssessmentStatusDto;
+import com.srr.repository.PlayerSportRatingRepository;
 import com.srr.service.EventOrganizerService;
 import com.srr.service.PlayerService;
 import com.wf.captcha.base.Captcha;
@@ -69,7 +71,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -98,6 +102,7 @@ public class AuthController {
     private final PlayerService playerService;
     private final EventOrganizerService eventOrganizerService;
     private final RoleRepository roleRepository;
+    private final PlayerSportRatingRepository playerSportRatingRepository;
 
     private final String REGISTER_KEY_PREFIX = "register:email:";
 
@@ -113,42 +118,55 @@ public class AuthController {
         // 清除验证码
 //        redisUtils.del(authUser.getUuid());
 //        if (StringUtils.isBlank(code)) {
-//            throw new BadRequestException("验证码不存在或已过期");
+//            throw new BadRequestException("验证码不存在");
 //        }
-//        if (StringUtils.isBlank(authUser.getCode()) || !authUser.getCode().equalsIgnoreCase(code)) {
+//        if (!code.equalsIgnoreCase(authUser.getCode())) {
 //            throw new BadRequestException("验证码错误");
 //        }
-        // 获取用户信息
-        JwtUserDto jwtUser = userDetailsService.loadUserByUsername(authUser.getUsername());
-        // 验证用户密码
+        // 登录
+        final JwtUserDto jwtUser = (JwtUserDto) userDetailsService.loadUserByUsername(authUser.getUsername());
         if (!passwordEncoder.matches(password, jwtUser.getPassword())) {
-            throw new BadRequestException("登录密码错误");
+            throw new BadRequestException("密码错误");
         }
-        Authentication authentication = new UsernamePasswordAuthenticationToken(jwtUser, null, jwtUser.getAuthorities());
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        if (!jwtUser.isEnabled()) {
+            throw new BadRequestException("账号未激活");
+        }
         // 生成令牌
         String token = tokenProvider.createToken(jwtUser);
-        // 返回 token 与 用户信息
-        Map<String, Object> authInfo = new HashMap<>(3) {{
-            put("token", properties.getTokenStartWith() + token);
-            put("user", jwtUser);
-        }};
-        
-        // Check if the user is a player and include assessment status in the response
-        if (jwtUser.getUser().getUserType() == UserType.PLAYER) {
-            // Get player assessment status
-            Player player = playerService.findByUserId(jwtUser.getUser().getId());
-            if (player != null) {
-                Double rateScore = player.getRateScore();
-                boolean isAssessmentCompleted = rateScore != null && rateScore > 0;
-                
-                String message = isAssessmentCompleted 
-                    ? "Self-assessment completed." 
-                    : "Please complete your self-assessment before joining any events.";
-                    
-                PlayerAssessmentStatusDto assessmentStatus = new PlayerAssessmentStatusDto(isAssessmentCompleted, message);
-                authInfo.put("assessmentStatus", assessmentStatus);
+        Map<String, Object> authInfo = new HashMap<>();
+        authInfo.put("token", properties.getTokenStartWith() + token);
+        authInfo.put("user", jwtUser);
+
+        // --- Add entity id if exists (playerId or organizerId) ---
+        if (jwtUser.getUser() != null && jwtUser.getUser().getUserType() != null) {
+            if (jwtUser.getUser().getUserType().name().equals("PLAYER")) {
+                Player player = playerService.findByUserId(jwtUser.getUser().getId());
+                if (player != null) {
+                    authInfo.put("playerId", player.getId());
+                }
+            } else if (jwtUser.getUser().getUserType().name().equals("ORGANIZER")) {
+                List<EventOrganizer> organizers = eventOrganizerService.findByUserId(jwtUser.getUser().getId());
+                if (organizers != null && !organizers.isEmpty()) {
+                    authInfo.put("organizerId", organizers.get(0).getId());
+                }
             }
+        }
+        // ---------------------------------------------------------
+
+        // 评估状态（仅对玩家）
+        if (jwtUser.getUser() != null && jwtUser.getUser().getUserType() != null && jwtUser.getUser().getUserType().name().equals("PLAYER")) {
+            Player player = playerService.findByUserId(jwtUser.getUser().getId());
+            boolean isAssessmentCompleted = false;
+            String message = "Please complete your self-assessment before joining any events.";
+            if (player != null) {
+                Optional<PlayerSportRating> ratingOpt = playerSportRatingRepository.findByPlayerIdAndSportAndFormat(player.getId(), "badminton", "doubles");
+                if (ratingOpt.isPresent() && ratingOpt.get().getRateScore() != null && ratingOpt.get().getRateScore() > 0) {
+                    isAssessmentCompleted = true;
+                    message = "Self-assessment completed.";
+                }
+            }
+            PlayerAssessmentStatusDto assessmentStatus = new PlayerAssessmentStatusDto(isAssessmentCompleted, message);
+            authInfo.put("assessmentStatus", assessmentStatus);
         }
         
         if (loginProperties.isSingleLogin()) {
@@ -237,6 +255,23 @@ public class AuthController {
         response.put("username", registerDto.getUsername());
         response.put("requireEmailVerification", true);
         response.put("message", "Please check your email to verify your account");
+
+        // --- Add entity id if created (playerId or organizerId) ---
+        if (registerDto.getUserType() != null) {
+            if (registerDto.getUserType().name().equals("PLAYER")) {
+                Player player = playerService.findByUserId(result.id());
+                if (player != null) {
+                    response.put("playerId", player.getId());
+                }
+            } else if (registerDto.getUserType().name().equals("ORGANIZER")) {
+                List<EventOrganizer> organizers = eventOrganizerService.findByUserId(result.id());
+                if (organizers != null && !organizers.isEmpty()) {
+                    response.put("organizerId", organizers.get(0).getId());
+                }
+            }
+        }
+        // ---------------------------------------------------------
+
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -373,7 +408,6 @@ public class AuthController {
         Player player = new Player();
         player.setName(user.getNickName());
         player.setUserId(user.getId());
-        player.setRateScore(0D);
         player.setDescription("Player created upon registration");
 
         // Save player - this will trigger role assignment via UserRoleSyncService

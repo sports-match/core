@@ -2,10 +2,12 @@ package com.srr.service.impl;
 
 import com.srr.domain.Player;
 import com.srr.domain.PlayerAnswer;
+import com.srr.domain.PlayerSportRating;
 import com.srr.domain.Question;
 import com.srr.dto.PlayerAnswerDto;
 import com.srr.repository.PlayerAnswerRepository;
 import com.srr.repository.PlayerRepository;
+import com.srr.repository.PlayerSportRatingRepository;
 import com.srr.repository.QuestionRepository;
 import com.srr.service.PlayerAnswerService;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +36,7 @@ public class PlayerAnswerServiceImpl implements PlayerAnswerService {
     private final PlayerAnswerRepository playerAnswerRepository;
     private final QuestionRepository questionRepository;
     private final PlayerRepository playerRepository;
+    private final PlayerSportRatingRepository playerSportRatingRepository;
 
     @Override
     public PageResult<PlayerAnswerDto> queryAll(PlayerAnswerDto criteria, Pageable pageable) {
@@ -59,40 +62,49 @@ public class PlayerAnswerServiceImpl implements PlayerAnswerService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public List<PlayerAnswerDto> submitSelfAssessment(List<PlayerAnswerDto> answers) {
+        return submitSelfAssessment(answers, "Badminton", "DOUBLES");
+    }
+
+    // Overloaded method to support sport/format from controller
+    public List<PlayerAnswerDto> submitSelfAssessment(List<PlayerAnswerDto> answers, String sport, String format) {
         if (answers.isEmpty()) {
             throw new BadRequestException("No answers provided");
         }
-        
         Long playerId = answers.get(0).getPlayerId();
         if (!playerRepository.existsById(playerId)) {
             throw new BadRequestException("Player not found");
         }
-        
         // Delete existing answers if any
         List<PlayerAnswer> existingAnswers = playerAnswerRepository.findByPlayerId(playerId);
         if (!existingAnswers.isEmpty()) {
             playerAnswerRepository.deleteAll(existingAnswers);
         }
-        
         List<PlayerAnswer> savedAnswers = new ArrayList<>();
         for (PlayerAnswerDto answerDto : answers) {
             if (!questionRepository.existsById(answerDto.getQuestionId())) {
                 throw new BadRequestException("Question with ID " + answerDto.getQuestionId() + " not found");
             }
-            
             PlayerAnswer answer = new PlayerAnswer();
             answer.setPlayerId(playerId);
             answer.setQuestionId(answerDto.getQuestionId());
             answer.setAnswerValue(answerDto.getAnswerValue());
             savedAnswers.add(playerAnswerRepository.save(answer));
         }
-        
-        // Calculate and update player score based on answers
-        updatePlayerScore(playerId);
-        
-        return savedAnswers.stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+        // Query sportId for given sport name
+        Long sportId = questionRepository.findAll().stream()
+            .filter(q -> q.getSport() != null && q.getSport().getName().equalsIgnoreCase(sport))
+            .map(q -> q.getSport().getId())
+            .findFirst()
+            .orElseThrow(() -> new BadRequestException("Sport not found: " + sport));
+        // Query questions by sportId and format
+        List<Question> questions = questionRepository.findBySportIdAndFormatOrderByCategoryAndOrderIndex(sportId, com.srr.domain.MatchFormat.valueOf(format));
+        List<Long> questionIds = questions.stream().map(Question::getId).collect(Collectors.toList());
+        // Only consider answers for these questions
+        List<PlayerAnswer> relevantAnswers = savedAnswers.stream()
+            .filter(ans -> questionIds.contains(ans.getQuestionId()))
+            .collect(Collectors.toList());
+        updatePlayerSportRating(playerId, sport, format, relevantAnswers);
+        return savedAnswers.stream().map(this::toDto).collect(Collectors.toList());
     }
 
     @Override
@@ -103,10 +115,10 @@ public class PlayerAnswerServiceImpl implements PlayerAnswerService {
         playerAnswer.setQuestionId(resources.getQuestionId());
         playerAnswer.setAnswerValue(resources.getAnswerValue());
         PlayerAnswer saved = playerAnswerRepository.save(playerAnswer);
-        
-        // Recalculate player score after creating an answer
-        updatePlayerScore(resources.getPlayerId());
-        
+        // Recalculate player sport rating after creating an answer
+        List<PlayerAnswer> answers = playerAnswerRepository.findByPlayerId(resources.getPlayerId());
+        // Use default sport/format for single answer creation
+        updatePlayerSportRating(resources.getPlayerId(), "Badminton", "DOUBLES", answers);
         return ExecutionResult.of(saved.getId());
     }
 
@@ -115,22 +127,17 @@ public class PlayerAnswerServiceImpl implements PlayerAnswerService {
     public ExecutionResult update(PlayerAnswerDto resources) {
         PlayerAnswer playerAnswer = playerAnswerRepository.findById(resources.getId())
                 .orElseThrow(() -> new EntityNotFoundException(PlayerAnswer.class, "id", resources.getId().toString()));
-        
         Player player = playerRepository.findById(resources.getPlayerId())
                 .orElseThrow(() -> new EntityNotFoundException(Player.class, "id", resources.getPlayerId().toString()));
-        
         Question question = questionRepository.findById(resources.getQuestionId())
                 .orElseThrow(() -> new EntityNotFoundException(Question.class, "id", resources.getQuestionId().toString()));
-        
         playerAnswer.setPlayer(player);
         playerAnswer.setQuestion(question);
         playerAnswer.setAnswerValue(resources.getAnswerValue());
-        
         PlayerAnswer saved = playerAnswerRepository.save(playerAnswer);
-        
-        // Recalculate player score
-        updatePlayerScore(player.getId());
-        
+        // Recalculate player sport rating after update
+        List<PlayerAnswer> answers = playerAnswerRepository.findByPlayerId(resources.getPlayerId());
+        updatePlayerSportRating(resources.getPlayerId(), "Badminton", "DOUBLES", answers);
         return ExecutionResult.of(saved.getId());
     }
 
@@ -139,14 +146,11 @@ public class PlayerAnswerServiceImpl implements PlayerAnswerService {
     public ExecutionResult delete(Long id) {
         PlayerAnswer playerAnswer = playerAnswerRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(PlayerAnswer.class, "id", id.toString()));
-        
         Long playerId = playerAnswer.getPlayerId();
-        
         playerAnswerRepository.deleteById(id);
-        
-        // Recalculate player score
-        updatePlayerScore(playerId);
-        
+        // Recalculate player sport rating after delete
+        List<PlayerAnswer> answers = playerAnswerRepository.findByPlayerId(playerId);
+        updatePlayerSportRating(playerId, "Badminton", "DOUBLES", answers);
         return ExecutionResult.ofDeleted(id);
     }
 
@@ -189,42 +193,35 @@ public class PlayerAnswerServiceImpl implements PlayerAnswerService {
         return dto;
     }
     
-    /**
-     * Calculate and update player score based on self-assessment answers
-     * @param playerId The player ID
-     */
-    private void updatePlayerScore(Long playerId) {
-        Optional<Player> playerOptional = playerRepository.findById(playerId);
-        if (playerOptional.isEmpty()) {
-            // Optionally log an error or throw an exception
-            // For now, just return if player not found to avoid NullPointerException
-            System.err.println("Player not found with ID: " + playerId + " when trying to update score.");
+    // New updatePlayerSportRating overload to accept relevant answers
+    private void updatePlayerSportRating(Long playerId, String sport, String format, List<PlayerAnswer> answers) {
+        if (answers.isEmpty()) {
             return;
         }
-        Player player = playerOptional.get();
-
-        long totalQuestions = questionRepository.count();
-        long answeredQuestionsCount = playerAnswerRepository.countDistinctQuestionByPlayerId(playerId);
-
-        if (totalQuestions > 0 && answeredQuestionsCount == totalQuestions) {
-            player.setRateScore(500.0);
+        int total = answers.stream().mapToInt(PlayerAnswer::getAnswerValue).sum();
+        double srrd;
+        String band;
+        if (total <= 9) {
+            srrd = 1000;
+            band = "BEGINNER";
+        } else if (total <= 15) {
+            srrd = 1200;
+            band = "INTERMEDIATE";
+        } else if (total <= 18) {
+            srrd = 1400;
+            band = "ADVANCED";
         } else {
-            List<PlayerAnswer> answers = playerAnswerRepository.findByPlayerId(playerId);
-            if (answers.isEmpty()) {
-                // If no answers, perhaps set score to 0 or a default, or leave as is.
-                // Current behavior if answers is empty: average() returns 0.0, so score becomes 0.0
-                // Let's explicitly set to 0.0 if no answers, or if you prefer, player.setRateScore(null);
-                player.setRateScore(0.0); 
-            } else {
-                // Simple algorithm: average of all answer values
-                double averageScore = answers.stream()
-                        .mapToInt(PlayerAnswer::getAnswerValue)
-                        .average()
-                        .orElse(0.0); // Default to 0.0 if stream is empty (should not happen if answers is not empty)
-                player.setRateScore(averageScore);
-            }
+            srrd = 1600;
+            band = "EXPERT";
         }
-        
-        playerRepository.save(player);
+        PlayerSportRating rating = playerSportRatingRepository.findByPlayerIdAndSportAndFormat(playerId, sport, format)
+            .orElse(new PlayerSportRating());
+        rating.setPlayerId(playerId);
+        rating.setSport(sport);
+        rating.setFormat(format);
+        rating.setRateScore(srrd);
+        rating.setRateBand(band);
+        rating.setProvisional(true);
+        playerSportRatingRepository.save(rating);
     }
 }

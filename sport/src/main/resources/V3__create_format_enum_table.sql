@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS format (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(32) NOT NULL UNIQUE
+);
+
+INSERT INTO format (name) VALUES ('singles'), ('doubles') ON DUPLICATE KEY UPDATE name=name;

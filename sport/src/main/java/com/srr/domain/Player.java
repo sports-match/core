@@ -77,10 +77,6 @@ public class Player implements Serializable {
     @ApiModelProperty(value = "Update time", hidden = true)
     private Timestamp updateTime;
 
-    @Column(name = "rate_score")
-    @ApiModelProperty(value = "Score")
-    private Double rateScore;
-
     @Column(name = "user_id", nullable = false)
     @NotNull
     @ApiModelProperty(value = "userId")

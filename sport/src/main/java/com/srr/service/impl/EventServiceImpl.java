@@ -65,6 +65,8 @@ public class EventServiceImpl implements EventService {
     private final MatchGroupRepository matchGroupRepository;
     private final MatchRepository matchRepository;
     private final WaitListRepository waitListRepository;
+    private final PlayerSportRatingRepository playerSportRatingRepository;
+    private final EventOrganizerRepository eventOrganizerRepository;
 
     @Override
     public PageResult<EventDto> queryAll(EventQueryCriteria criteria, Pageable pageable) {
@@ -122,6 +124,17 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public EventDto joinEvent(JoinEventDto joinEventDto) {
+        // Self-assessment enforcement: require PlayerSportRating for badminton/doubles
+        Long playerId = joinEventDto.getPlayerId();
+        // For phase 1, sport is always "Badminton", format is always "DOUBLES"
+        if (playerId == null) {
+            throw new BadRequestException("Player ID is required to join event");
+        }
+        var ratingOpt = playerSportRatingRepository.findByPlayerIdAndSportAndFormat(playerId, "Badminton", "DOUBLES");
+        if (ratingOpt.isEmpty() || ratingOpt.get().getRateScore() == null || ratingOpt.get().getRateScore() <= 0) {
+            throw new BadRequestException("Please complete your self-assessment before joining an event.");
+        }
+        
         // Find the event
         Event event = eventRepository.findById(joinEventDto.getEventId())
                 .orElseThrow(() -> new EntityNotFoundException(Event.class, "id", String.valueOf(joinEventDto.getEventId())));
@@ -273,5 +286,15 @@ public class EventServiceImpl implements EventService {
             list.add(map);
         }
         FileUtil.downloadExcel(list, response);
+    }
+
+    @Override
+    public void validateOrganizerClubPermission(Long organizerId, Long clubId) {
+        EventOrganizer organizer = eventOrganizerRepository.findById(organizerId)
+            .orElseThrow(() -> new IllegalArgumentException("Organizer not found"));
+        boolean allowed = organizer.getClubs().stream().anyMatch(club -> club.getId().equals(clubId));
+        if (!allowed) {
+            throw new org.springframework.security.access.AccessDeniedException("Organizer is not allowed to manage this club");
+        }
     }
 }

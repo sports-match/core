@@ -1,6 +1,7 @@
 package com.srr.rest;
 
 import com.srr.dto.PlayerAnswerDto;
+import com.srr.dto.PlayerSelfAssessmentRequest;
 import com.srr.service.PlayerAnswerService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -59,9 +60,11 @@ public class PlayerAnswerController {
     @PostMapping("/submit-assessment")
     @PreAuthorize("@el.check('player-answer:create')")
     public ResponseEntity<List<PlayerAnswerDto>> submitSelfAssessment(
-            @Validated @RequestBody List<PlayerAnswerDto> answers) {
+            @Validated @RequestBody PlayerSelfAssessmentRequest request) {
+        String sport = (request.getSport() == null || request.getSport().isEmpty()) ? "Badminton" : request.getSport();
+        String format = (request.getFormat() == null || request.getFormat().isEmpty()) ? "DOUBLES" : request.getFormat();
         return new ResponseEntity<>(
-                playerAnswerService.submitSelfAssessment(answers), 
+                playerAnswerService.submitSelfAssessment(request.getAnswers(), sport, format),
                 HttpStatus.CREATED);
     }
     

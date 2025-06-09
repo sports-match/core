@@ -27,6 +27,7 @@ import java.sql.Timestamp;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
+import java.util.Set;
 
 /**
 * @website https://eladmin.vip
@@ -64,9 +65,14 @@ public class EventOrganizer implements Serializable {
     @ApiModelProperty(value = "userId")
     private Long userId;
 
-    @ManyToOne
-    @JoinColumn(name = "club_id")
-    private Club club;
+    @ManyToMany
+    @JoinTable(
+        name = "organizer_club",
+        joinColumns = @JoinColumn(name = "organizer_id"),
+        inverseJoinColumns = @JoinColumn(name = "club_id")
+    )
+    @ApiModelProperty(value = "Clubs this organizer can manage")
+    private Set<Club> clubs = new java.util.HashSet<>();
 
     public void copy(EventOrganizer source){
         BeanUtil.copyProperties(source, this, CopyOptions.create().setIgnoreNullValue(true));
