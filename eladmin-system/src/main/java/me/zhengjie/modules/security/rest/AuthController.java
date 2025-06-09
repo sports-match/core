@@ -1,25 +1,13 @@
-/*
- *  Copyright 2019-2025 Zheng Jie
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+
 package me.zhengjie.modules.security.rest;
 
 import cn.hutool.core.util.IdUtil;
+import com.srr.domain.Club;
 import com.srr.domain.EventOrganizer;
 import com.srr.domain.Player;
 import com.srr.domain.PlayerSportRating;
 import com.srr.dto.PlayerAssessmentStatusDto;
+import com.srr.repository.ClubRepository;
 import com.srr.repository.PlayerSportRatingRepository;
 import com.srr.service.EventOrganizerService;
 import com.srr.service.PlayerService;
@@ -102,6 +90,7 @@ public class AuthController {
     private final PlayerService playerService;
     private final EventOrganizerService eventOrganizerService;
     private final RoleRepository roleRepository;
+    private final ClubRepository clubRepository;
     private final PlayerSportRatingRepository playerSportRatingRepository;
 
     private final String REGISTER_KEY_PREFIX = "register:email:";
@@ -113,18 +102,10 @@ public class AuthController {
         // 密码解密
 //        String password = RsaUtils.decryptByPrivateKey(RsaProperties.privateKey, authUser.getPassword());
         String password = authUser.getPassword();
-        // 查询验证码
-//        String code = redisUtils.get(authUser.getUuid(), String.class);
-        // 清除验证码
-//        redisUtils.del(authUser.getUuid());
-//        if (StringUtils.isBlank(code)) {
-//            throw new BadRequestException("验证码不存在");
-//        }
-//        if (!code.equalsIgnoreCase(authUser.getCode())) {
-//            throw new BadRequestException("验证码错误");
-//        }
-        // 登录
-        final JwtUserDto jwtUser = (JwtUserDto) userDetailsService.loadUserByUsername(authUser.getUsername());
+
+        // 获取用户信息
+        JwtUserDto jwtUser = userDetailsService.loadUserByUsername(authUser.getUsername());
+        // 验证用户密码
         if (!passwordEncoder.matches(password, jwtUser.getPassword())) {
             throw new BadRequestException("密码错误");
         }
@@ -245,12 +226,39 @@ public class AuthController {
         user.setEmailVerified(false);
         user.setUserType(registerDto.getUserType()); // Save user type
 
-        ExecutionResult result = userService.create(user);
+        ExecutionResult executionResult = userService.create(user);
+        Long newUserId = executionResult.id();
 
-        sendEmail(registerDto.getEmail());
+        // Handle different user types
+        if (registerDto.getUserType() == UserType.PLAYER) {
+            Player player = new Player();
+            player.setUserId(newUserId);
+            // player.setRateScore(0.0); // Initial rate score or leave null
+            playerService.create(player);
+        } else if (registerDto.getUserType() == UserType.ORGANIZER) {
+            if (registerDto.getClubId() != null) {
+                Club club = clubRepository.findById(registerDto.getClubId())
+                        .orElseThrow(() -> new EntityNotFoundException(Club.class, "id", registerDto.getClubId()));
+                EventOrganizer eventOrganizer = new EventOrganizer();
+                eventOrganizer.setUserId(newUserId);
+                eventOrganizer.setClub(club);
+                // verificationStatus will default to PENDING as per EventOrganizer entity
+                eventOrganizerService.create(eventOrganizer);
+            } else {
+                // Optionally handle case where ORGANIZER is registered without a clubId,
+                // or make clubId mandatory for ORGANIZER type at DTO validation level.
+                // For now, we allow an organizer to be created without a club affiliation.
+                EventOrganizer eventOrganizer = new EventOrganizer();
+                eventOrganizer.setUserId(newUserId);
+                eventOrganizerService.create(eventOrganizer);
+            }
+        }
+
+        // Send verification email
+        EmailVo emailVo = sendEmail(registerDto.getEmail());
 
         Map<String, Object> response = new HashMap<>();
-        response.put("userId", result.id());
+        response.put("userId", newUserId);
         response.put("email", registerDto.getEmail());
         response.put("username", registerDto.getUsername());
         response.put("requireEmailVerification", true);

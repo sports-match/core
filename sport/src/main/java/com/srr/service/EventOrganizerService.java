@@ -1,6 +1,7 @@
 package com.srr.service;
 
 import com.srr.domain.EventOrganizer;
+import com.srr.enumeration.VerificationStatus;
 import com.srr.domain.Club;
 import me.zhengjie.utils.ExecutionResult;
 
@@ -25,14 +26,22 @@ public interface EventOrganizerService {
      * @return List of event organizers associated with the user
      */
     List<EventOrganizer> findByUserId(Long userId);
-    
+
+    /**
+     * Update the verification status of an event organizer.
+     * @param organizerId The ID of the event organizer to update.
+     * @param status The new verification status.
+     * @return ExecutionResult containing the updated entity's ID.
+     */
+    ExecutionResult updateVerificationStatus(Long organizerId, VerificationStatus status);
+
     /**
      * Link clubs to an event organizer
      * @param organizerId The ID of the event organizer
      * @param clubIds The IDs of the clubs to link
      */
     void linkClubs(Long organizerId, List<Long> clubIds);
-    
+
     /**
      * Get the clubs associated with an event organizer
      * @param organizerId The ID of the event organizer

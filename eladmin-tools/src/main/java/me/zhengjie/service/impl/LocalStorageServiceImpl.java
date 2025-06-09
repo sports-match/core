@@ -17,6 +17,7 @@ package me.zhengjie.service.impl;
 
 import cn.hutool.core.util.ObjectUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.config.properties.FileProperties;
 import me.zhengjie.domain.LocalStorage;
 import me.zhengjie.service.dto.LocalStorageDto;
@@ -29,7 +30,9 @@ import me.zhengjie.service.LocalStorageService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,11 +41,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletResponse;
+import org.springframework.http.MediaTypeFactory;
 
 /**
 * @author Zheng Jie
 * @date 2019-09-05
 */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LocalStorageServiceImpl implements LocalStorageService {
@@ -129,5 +134,46 @@ public class LocalStorageServiceImpl implements LocalStorageService {
             list.add(map);
         }
         FileUtil.downloadExcel(list, response);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void streamFile(String realName, HttpServletResponse response) throws IOException {
+        LocalStorage localStorage = localStorageRepository.findByRealName(realName);
+        if (localStorage == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "File not found: " + realName);
+            return;
+        }
+
+        File file = new File(localStorage.getPath());
+
+        if (!file.exists() || !file.canRead()) {
+            log.error("File not found or not readable at path: {} for realName: {}", localStorage.getPath(), realName);
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "File resource not found or not readable");
+            return;
+        }
+
+        org.springframework.http.MediaType mediaType = MediaTypeFactory
+                .getMediaType(localStorage.getRealName())
+                .orElse(org.springframework.http.MediaType.APPLICATION_OCTET_STREAM);
+        String contentType = mediaType.toString();
+
+        response.setContentType(contentType);
+        response.setHeader("Content-Disposition", "inline; filename=\"" + localStorage.getRealName() + "\"");
+        response.setContentLengthLong(file.length());
+
+        try (FileInputStream fis = new FileInputStream(file); OutputStream os = response.getOutputStream()) {
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = fis.read(buffer)) != -1) {
+                os.write(buffer, 0, bytesRead);
+            }
+            os.flush();
+        } catch (IOException e) {
+            // Check if response is already committed before sending error
+            if (!response.isCommitted()) {
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error streaming file");
+            }
+        }
     }
 }

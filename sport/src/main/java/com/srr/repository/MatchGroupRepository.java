@@ -32,4 +32,10 @@ public interface MatchGroupRepository extends JpaRepository<MatchGroup, Long>, J
      * @return List of match groups
      */
     List<MatchGroup> findAllByEventId(Long eventId);
+
+    /**
+     * Delete all match groups for a specific event.
+     * @param eventId The event ID.
+     */
+    void deleteByEventId(Long eventId);
 }
