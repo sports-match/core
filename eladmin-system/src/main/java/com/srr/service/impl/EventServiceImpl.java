@@ -4,6 +4,7 @@ import com.srr.domain.*;
 import com.srr.dto.EventDto;
 import com.srr.dto.EventQueryCriteria;
 import com.srr.dto.JoinEventDto;
+import com.srr.dto.enums.EventTimeFilter;
 import com.srr.dto.mapstruct.EventMapper;
 import com.srr.enumeration.EventStatus;
 import com.srr.enumeration.Format;
@@ -19,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.criteria.Predicate;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.sql.Timestamp;
@@ -27,7 +29,6 @@ import java.util.*;
 
 /**
  * @author Chanheng
- * @website https://eladmin.vip
  * @description 服务实现
  * @date 2025-05-18
  **/
@@ -47,13 +48,35 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public PageResult<EventDto> queryAll(EventQueryCriteria criteria, Pageable pageable) {
-        Page<Event> page = eventRepository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root, criteria, criteriaBuilder), pageable);
+        Page<Event> page = eventRepository.findAll((root, criteriaQuery, criteriaBuilder) -> {
+            Predicate predicate = QueryHelp.getPredicate(root, criteria, criteriaBuilder);
+            if (criteria.getEventTimeFilter() != null) {
+                Timestamp now = new Timestamp(System.currentTimeMillis());
+                if (criteria.getEventTimeFilter() == EventTimeFilter.UPCOMING) {
+                    predicate = criteriaBuilder.and(predicate, criteriaBuilder.greaterThanOrEqualTo(root.get("eventTime"), now));
+                } else if (criteria.getEventTimeFilter() == EventTimeFilter.PAST) {
+                    predicate = criteriaBuilder.and(predicate, criteriaBuilder.lessThan(root.get("eventTime"), now));
+                }
+            }
+            return predicate;
+        }, pageable);
         return PageUtil.toPage(page.map(eventMapper::toDto));
     }
 
     @Override
     public List<EventDto> queryAll(EventQueryCriteria criteria) {
-        return eventMapper.toDto(eventRepository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root, criteria, criteriaBuilder)));
+        return eventMapper.toDto(eventRepository.findAll((root, criteriaQuery, criteriaBuilder) -> {
+            Predicate predicate = QueryHelp.getPredicate(root, criteria, criteriaBuilder);
+            if (criteria.getEventTimeFilter() != null) {
+                Timestamp now = new Timestamp(System.currentTimeMillis());
+                if (criteria.getEventTimeFilter() == EventTimeFilter.UPCOMING) {
+                    predicate = criteriaBuilder.and(predicate, criteriaBuilder.greaterThanOrEqualTo(root.get("eventTime"), now));
+                } else if (criteria.getEventTimeFilter() == EventTimeFilter.PAST) {
+                    predicate = criteriaBuilder.and(predicate, criteriaBuilder.lessThan(root.get("eventTime"), now));
+                }
+            }
+            return predicate;
+        }));
     }
 
     @Override
