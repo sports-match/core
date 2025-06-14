@@ -15,20 +15,13 @@
  */
 package me.zhengjie.modules.system.service.impl;
 
-import cn.hutool.core.collection.CollUtil;
 import lombok.RequiredArgsConstructor;
-import me.zhengjie.modules.system.domain.Dept;
 import me.zhengjie.modules.system.service.DataService;
-import me.zhengjie.modules.system.service.DeptService;
-import me.zhengjie.modules.system.service.RoleService;
-import me.zhengjie.modules.system.service.dto.RoleSmallDto;
 import me.zhengjie.modules.system.service.dto.UserDto;
-import me.zhengjie.utils.CacheKey;
-import me.zhengjie.utils.RedisUtils;
-import me.zhengjie.utils.enums.DataScopeEnum;
 import org.springframework.stereotype.Service;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Zheng Jie
@@ -39,39 +32,15 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class DataServiceImpl implements DataService {
 
-    private final RedisUtils redisUtils;
-    private final RoleService roleService;
-    private final DeptService deptService;
-
     /**
-     * 用户角色和用户部门改变时需清理缓存
+     * 获取数据权限
      * @param user /
-     * @return /
+     * @return / 返回一个空列表，因为部门功能被移除
      */
     @Override
     public List<Long> getDeptIds(UserDto user) {
-        String key = CacheKey.DATA_USER + user.getId();
-        List<Long> ids = redisUtils.getList(key, Long.class);
-        if (CollUtil.isEmpty(ids)) {
-            // Since departments have been removed, we return an empty list
-            // This simplifies data scope - essentially giving full access since
-            // department-based restrictions are no longer applicable
-            return new ArrayList<>();
-        }
-        return ids;
-    }
-
-    /**
-     * 获取自定义的数据权限
-     * @param deptIds 部门ID
-     * @param role 角色
-     * @return 数据权限ID
-     */
-    public Set<Long> getCustomize(Set<Long> deptIds, RoleSmallDto role){
-        Set<Dept> depts = deptService.findByRoleId(role.getId());
-        for (Dept dept : depts) {
-            deptIds.add(dept.getId());
-        }
-        return deptIds;
+        // Departments and department-based data scopes are being removed.
+        // Therefore, always return an empty list, signifying no department-based data restrictions.
+        return new ArrayList<>();
     }
 }

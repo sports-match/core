@@ -19,11 +19,10 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import lombok.RequiredArgsConstructor;
 import me.zhengjie.exception.BadRequestException;
+import me.zhengjie.exception.EntityExistException;
 import me.zhengjie.modules.security.service.UserCacheManager;
 import me.zhengjie.modules.security.service.dto.AuthorityDto;
-import me.zhengjie.modules.system.domain.Menu;
 import me.zhengjie.modules.system.domain.Role;
-import me.zhengjie.exception.EntityExistException;
 import me.zhengjie.modules.system.domain.User;
 import me.zhengjie.modules.system.repository.RoleRepository;
 import me.zhengjie.modules.system.repository.UserRepository;
@@ -31,7 +30,6 @@ import me.zhengjie.modules.system.service.RoleService;
 import me.zhengjie.modules.system.service.dto.RoleDto;
 import me.zhengjie.modules.system.service.dto.RoleQueryCriteria;
 import me.zhengjie.modules.system.service.dto.RoleSmallDto;
-import me.zhengjie.modules.system.service.dto.UserDto;
 import me.zhengjie.modules.system.service.mapstruct.RoleMapper;
 import me.zhengjie.modules.system.service.mapstruct.RoleSmallMapper;
 import me.zhengjie.utils.*;
@@ -40,6 +38,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.*;
@@ -112,7 +111,6 @@ public class RoleServiceImpl implements RoleService {
         }
         role.setName(resources.getName());
         role.setDescription(resources.getDescription());
-        role.setDataScope(resources.getDataScope());
         role.setLevel(resources.getLevel());
         roleRepository.save(role);
         // 更新相关缓存
@@ -120,38 +118,22 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
-    public void updateMenu(Role resources, RoleDto roleDTO) {
-        Role role = roleMapper.toEntity(roleDTO);
-        List<User> users = userRepository.findByRoleId(role.getId());
-        // 更新菜单
-        role.setMenus(resources.getMenus());
-        delCaches(resources.getId(), users);
-        roleRepository.save(role);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void untiedMenu(Long menuId) {
-        // 更新菜单
-        roleRepository.untiedMenu(menuId);
-    }
-
-    @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(Set<Long> ids) {
         for (Long id : ids) {
             // 更新相关缓存
-            delCaches(id, null);
+            RoleDto roleDto = findById(id);
+            delCaches(roleDto.getId(), userRepository.findByRoleId(roleDto.getId()));
         }
         roleRepository.deleteAllByIdIn(ids);
     }
 
     @Override
-    public List<RoleSmallDto> findByUsersId(Long userId) {
-        String key = CacheKey.ROLE_USER + userId;
+    public List<RoleSmallDto> findByUsersId(Long id) {
+        String key = CacheKey.ROLE_USER + id;
         List<RoleSmallDto> roles = redisUtils.getList(key, RoleSmallDto.class);
         if (CollUtil.isEmpty(roles)) {
-            roles = roleSmallMapper.toDto(new ArrayList<>(roleRepository.findByUserId(userId)));
+            roles = roleSmallMapper.toDto(new ArrayList<>(roleRepository.findByUserId(id)));
             redisUtils.set(key, roles, 1, TimeUnit.DAYS);
         }
         return roles;
@@ -166,27 +148,27 @@ public class RoleServiceImpl implements RoleService {
         for (Role role : roles) {
             roleDtos.add(findById(role.getId()));
         }
-        return Collections.min(roleDtos.stream().map(RoleDto::getLevel).collect(Collectors.toList()));
+        return Collections.min(roleDtos.stream().map(RoleDto::getLevel).toList());
     }
 
     @Override
-    public List<AuthorityDto> buildPermissions(UserDto user) {
-        String key = CacheKey.ROLE_AUTH + user.getId();
+    public List<AuthorityDto> buildPermissions(String username) {
+        final var user = userRepository.findByUsername(username);
+        if (user == null) {
+            return Collections.emptyList();
+        }
+        final var userId = user.getId();
+        String key = CacheKey.ROLE_AUTH + userId;
         List<AuthorityDto> authorityDtos = redisUtils.getList(key, AuthorityDto.class);
         if (CollUtil.isEmpty(authorityDtos)) {
-            Set<String> permissions = new HashSet<>();
             // 如果是管理员直接返回
-            if (user.getIsAdmin()) {
-                permissions.add("admin");
-                return permissions.stream().map(AuthorityDto::new)
-                        .collect(Collectors.toList());
-            }
-            Set<Role> roles = roleRepository.findByUserId(user.getId());
-            permissions = roles.stream().flatMap(role -> role.getMenus().stream())
-                    .map(Menu::getPermission)
-                    .filter(StringUtils::isNotBlank).collect(Collectors.toSet());
-            authorityDtos = permissions.stream().map(AuthorityDto::new)
+            authorityDtos = roleRepository.findByUserId(userId)
+                    .stream()
+                    .map(Role::getName)
+                    .filter(StringUtils::isNotBlank)
+                    .map(AuthorityDto::new)
                     .collect(Collectors.toList());
+
             redisUtils.set(key, authorityDtos, 1, TimeUnit.HOURS);
         }
         return authorityDtos;
@@ -199,7 +181,6 @@ public class RoleServiceImpl implements RoleService {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("Role name", role.getName());
             map.put("Role description", role.getDescription());
-            map.put("Role data scope", role.getDataScope());
             map.put("Role level", role.getLevel());
             map.put("Creation date", role.getCreateTime());
             list.add(map);
@@ -214,16 +195,7 @@ public class RoleServiceImpl implements RoleService {
         }
     }
 
-    @Override
-    public List<Role> findInMenuId(List<Long> menuIds) {
-        return roleRepository.findInMenuId(menuIds);
-    }
-
-    /**
-     * 清理缓存
-     * @param id /
-     */
-    public void delCaches(Long id, List<User> users) {
+    private void delCaches(Long id, List<User> users) {
         users = CollectionUtil.isEmpty(users) ? userRepository.findByRoleId(id) : users;
         if (CollectionUtil.isNotEmpty(users)) {
             users.forEach(item -> userCacheManager.cleanUserCache(item.getUsername()));

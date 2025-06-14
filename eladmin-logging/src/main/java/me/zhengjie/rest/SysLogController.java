@@ -29,6 +29,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
@@ -47,7 +48,7 @@ public class SysLogController {
     @Log("Export Data")
     @ApiOperation("Export Data")
     @GetMapping(value = "/download")
-    @PreAuthorize("@el.check()")
+    @PreAuthorize("hasAuthority('Admin')")
     public void exportLog(HttpServletResponse response, SysLogQueryCriteria criteria) throws IOException {
         criteria.setLogType("INFO");
         sysLogService.download(sysLogService.queryAll(criteria), response);
@@ -56,14 +57,14 @@ public class SysLogController {
     @Log("Export Error Data")
     @ApiOperation("Export Error Data")
     @GetMapping(value = "/error/download")
-    @PreAuthorize("@el.check()")
+    @PreAuthorize("hasAuthority('Admin')")
     public void exportErrorLog(HttpServletResponse response, SysLogQueryCriteria criteria) throws IOException {
         criteria.setLogType("ERROR");
         sysLogService.download(sysLogService.queryAll(criteria), response);
     }
     @GetMapping
     @ApiOperation("Log Query")
-    @PreAuthorize("@el.check()")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> queryLog(SysLogQueryCriteria criteria, Pageable pageable){
         criteria.setLogType("INFO");
         return new ResponseEntity<>(sysLogService.queryAll(criteria,pageable), HttpStatus.OK);
@@ -79,7 +80,7 @@ public class SysLogController {
 
     @GetMapping(value = "/error")
     @ApiOperation("Error Log Query")
-    @PreAuthorize("@el.check()")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> queryErrorLog(SysLogQueryCriteria criteria, Pageable pageable){
         criteria.setLogType("ERROR");
         return new ResponseEntity<>(sysLogService.queryAll(criteria,pageable), HttpStatus.OK);
@@ -87,14 +88,14 @@ public class SysLogController {
 
     @GetMapping(value = "/error/{id}")
     @ApiOperation("Log Exception Detail Query")
-    @PreAuthorize("@el.check()")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> queryErrorLogDetail(@PathVariable Long id){
         return new ResponseEntity<>(sysLogService.findByErrDetail(id), HttpStatus.OK);
     }
     @DeleteMapping(value = "/del/error")
     @Log("Delete All ERROR Logs")
     @ApiOperation("Delete All ERROR Logs")
-    @PreAuthorize("@el.check()")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> delAllErrorLog(){
         sysLogService.delAllByError();
         return new ResponseEntity<>(HttpStatus.OK);
@@ -103,7 +104,7 @@ public class SysLogController {
     @DeleteMapping(value = "/del/info")
     @Log("Delete All INFO Logs")
     @ApiOperation("Delete All INFO Logs")
-    @PreAuthorize("@el.check()")
+    @PreAuthorize("hasAuthority('Admin')")
     public ResponseEntity<Object> delAllInfoLog(){
         sysLogService.delAllByInfo();
         return new ResponseEntity<>(HttpStatus.OK);

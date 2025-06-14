@@ -50,11 +50,6 @@ public interface CacheKey {
     String ROLE_ID = "role::id:";
 
     /**
-     * 部门
-     */
-    String DEPT_ID = "dept::id:";
-
-    /**
      * 岗位
      */
     String JOB_ID = "job::id:";

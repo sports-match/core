@@ -19,8 +19,8 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import me.zhengjie.annotation.Log;
-import me.zhengjie.domain.vo.EmailVo;
 import me.zhengjie.domain.EmailConfig;
+import me.zhengjie.domain.vo.EmailVo;
 import me.zhengjie.service.EmailService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,7 +43,7 @@ public class EmailController {
 
     @GetMapping
     @ApiOperation("Query email configuration")
-    @PreAuthorize("@el.check('email:list')")
+    @PreAuthorize("hasAnyAuthority('Admin')")
     public ResponseEntity<EmailConfig> queryEmailConfig(){
         return new ResponseEntity<>(emailService.find(),HttpStatus.OK);
     }
@@ -51,7 +51,7 @@ public class EmailController {
     @Log("Configure email")
     @PutMapping
     @ApiOperation("Configure email")
-    @PreAuthorize("@el.check('email:config')")
+    @PreAuthorize("hasAnyAuthority('Admin')")
     public ResponseEntity<Object> updateEmailConfig(@Validated @RequestBody EmailConfig emailConfig) throws Exception {
         emailService.config(emailConfig,emailService.find());
         return new ResponseEntity<>(HttpStatus.OK);
@@ -60,7 +60,7 @@ public class EmailController {
     @Log("Send email")
     @PostMapping
     @ApiOperation("Send email")
-    @PreAuthorize("@el.check('email:send')")
+    @PreAuthorize("hasAnyAuthority('Admin')")
     public ResponseEntity<Object> sendEmail(@Validated @RequestBody EmailVo emailVo){
         emailService.send(emailVo,emailService.find());
         return new ResponseEntity<>(HttpStatus.OK);
