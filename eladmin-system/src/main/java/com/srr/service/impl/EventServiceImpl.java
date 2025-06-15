@@ -163,7 +163,7 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new EntityNotFoundException(Event.class, "id", String.valueOf(joinEventDto.getEventId())));
         
         // Check if event allows joining
-        if (event.getStatus() != EventStatus.OPEN) {
+        if (event.getStatus() != EventStatus.PUBLISHED) {
             throw new BadRequestException("Event is not open for joining");
         }
         
