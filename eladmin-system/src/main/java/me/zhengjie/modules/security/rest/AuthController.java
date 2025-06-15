@@ -225,6 +225,7 @@ public class AuthController {
         if (registerDto.getUserType() == UserType.PLAYER) {
             Player player = new Player();
             player.setUserId(newUserId);
+            player.setName(registerDto.getNickName());
             // player.setRateScore(0.0); // Initial rate score or leave null
             playerService.create(player);
         } else if (registerDto.getUserType() == UserType.ORGANIZER) {
