@@ -100,15 +100,15 @@ public class EventServiceImpl implements EventService {
                 throw new BadRequestException("Organizer account is not verified. Event creation is not allowed.");
             }
         }
-        // If organizerList is empty, it means the user is not an organizer (e.g., an admin),
-        // so the check is bypassed. Permission to create is handled by @PreAuthorize.
 
-        resources.setStatus(EventStatus.DRAFT);
         // Set the creator of the event using the Long ID directly
         if (resources.getCreateBy() == null) { // Event.java has 'createBy' as Long
              resources.setCreateBy(currentUserId);
         }
+        // If organizerList is empty, it means the user is not an organizer (e.g., an admin),
+        // so the check is bypassed. Permission to create is handled by @PreAuthorize.
 
+        resources.setStatus(EventStatus.PUBLISHED);
         final var result = eventRepository.save(resources);
         return eventMapper.toDto(result);
     }
@@ -118,6 +118,11 @@ public class EventServiceImpl implements EventService {
     public EventDto update(Event resources) {
         Event event = eventRepository.findById(resources.getId()).orElseGet(Event::new);
         ValidationUtil.isNull(event.getId(), "Event", "id", resources.getId());
+        // Add status validation: only allow update if not PUBLISHED, CHECK_IN, IN_PROGRESS, CLOSED, or DELETED
+        if (!(event.getStatus() == EventStatus.PUBLISHED ||
+            event.getStatus() == EventStatus.CHECK_IN )) {
+            throw new BadRequestException("Cannot update event with status: " + event.getStatus());
+        }
         event.copy(resources);
         final var result = eventRepository.save(event);
         return eventMapper.toDto(result);
